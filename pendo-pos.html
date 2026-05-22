@@ -1,0 +1,3239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0B6E4F" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a1a12" media="(prefers-color-scheme: dark)">
+<title>Pendo Packaging — POS System</title>
+<meta name="application-name" content="Pendo POS">
+<meta name="description" content="Pendo Packaging POS — Sales, Inventory, Reports & KRA TOT for Chuka Town, Kenya">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pendo POS">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="msapplication-TileColor" content="#0B6E4F">
+<meta name="msapplication-tap-highlight" content="no">
+<meta name="format-detection" content="telephone=no">
+<!-- PWA Manifest injected inline via JS below -->
+<link rel="manifest" id="pwa-manifest-link">
+<!-- Apple touch icons (inline SVG-based, set via JS) -->
+<link rel="apple-touch-icon" id="apple-icon">
+<link rel="icon" type="image/svg+xml" id="favicon-svg">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style id="print-styles">
+/* ══ PRINT STYLES ══════════════════════════════════════ */
+@media print {
+  /* Hide everything except what we're printing */
+  body > *:not(#print-area) { display: none !important; }
+  #print-area {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #fff;
+    padding: 0;
+    margin: 0;
+  }
+  #print-area.receipt-print .rp {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    max-height: none !important;
+    width: 80mm;
+    margin: 0 auto;
+    transform: none !important;
+  }
+  #print-area.receipt-print .rpacts { display: none !important; }
+  #print-area.receipt-print .rpt {
+    border-radius: 0 !important;
+  }
+  /* Report print area */
+  #print-area.report-print {
+    padding: 20px;
+    overflow: visible;
+  }
+  #print-area.report-print .no-print { display: none !important; }
+  @page {
+    margin: 10mm;
+    size: A4;
+  }
+  @page.receipt {
+    size: 80mm auto;
+    margin: 0;
+  }
+}
+</style>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--forest:#0B6E4F;--green:#1d5733;--mid:#2a7347;--leaf:#38955d;--sage:#7bbf96;
+--mint:#c8ead7;--pale:#edf7f1;--gold:#D4A017;--gold-l:#e2b83a;--gold-p:#fdf3d8;
+--white:#fff;--off:#f5f7f6;--g50:#f0f4f2;--g100:#dde6e1;--g200:#b8ccc2;
+--g400:#6f9080;--g600:#3a5a4a;--ink:#142219;--danger:#c0392b;--warn:#d97706;--info:#1a56db;
+--r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;
+--sh-sm:0 1px 4px rgba(20,34,25,.08);--sh-md:0 4px 20px rgba(20,34,25,.12);--sh-lg:0 8px 40px rgba(20,34,25,.18);
+--font:'Plus Jakarta Sans',sans-serif;--serif:'Cormorant Garamond',Georgia,serif;
+--sidebar:240px;--topbar:60px;--bottom-nav:62px;--trans:.18s ease;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme]){--off:#0f1a13;--g50:#172218;--g100:#1f3026;--g200:#2d4a37;--g400:#5a8068;--g600:#8ab89a;--ink:#e8f5ec;--white:#162018;--pale:#1a2e22}}
+[data-theme="dark"]{--off:#0f1a13;--g50:#172218;--g100:#1f3026;--g200:#2d4a37;--g400:#5a8068;--g600:#8ab89a;--ink:#e8f5ec;--white:#162018;--pale:#1a2e22}
+[data-theme="light"]{--off:#f5f7f6;--g50:#f0f4f2;--g100:#dde6e1;--g200:#b8ccc2;--g400:#6f9080;--g600:#3a5a4a;--ink:#142219;--white:#fff;--pale:#edf7f1}
+
+/* ─ TOAST & PDF LOADER ─ */
+.toast{position:fixed;bottom:calc(var(--bottom-nav,0px) + 24px);left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:600;z-index:9999;opacity:0;pointer-events:none;transition:all .3s ease;white-space:nowrap;box-shadow:var(--sh-lg)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--danger)}
+.pdf-loader{position:fixed;inset:0;background:rgba(10,25,15,.7);z-index:9998;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.pdf-loader.show{display:flex}
+.pdf-loader-box{background:var(--white);border-radius:var(--r-xl);padding:32px 40px;text-align:center;box-shadow:var(--sh-xl)}
+.pdf-loader-icon{font-size:40px;margin-bottom:12px}
+.pdf-loader-title{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--green);margin-bottom:6px}
+.pdf-loader-sub{font-size:13px;color:var(--g400)}
+.pdf-spinner{width:40px;height:40px;border:3px solid var(--g100);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:16px auto 0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Dark mode toggle button */
+.dm-btn{width:38px;height:38px;border-radius:var(--r-sm);background:var(--g50);border:1.5px solid var(--g100);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--trans);flex-shrink:0;position:relative;overflow:hidden}
+.dm-btn:hover{border-color:var(--gold);background:var(--gold-p)}
+.dm-btn svg{width:18px;height:18px;color:var(--g400);transition:var(--trans);position:absolute}
+.dm-btn .ico-moon{opacity:1;transform:rotate(0deg) scale(1)}
+.dm-btn .ico-sun{opacity:0;transform:rotate(90deg) scale(.5)}
+[data-theme="dark"] .dm-btn .ico-moon{opacity:0;transform:rotate(-90deg) scale(.5)}
+[data-theme="dark"] .dm-btn .ico-sun{opacity:1;transform:rotate(0deg) scale(1);color:var(--gold)}
+[data-theme="dark"] .dm-btn{border-color:var(--g200);background:var(--g50)}
+html,body{height:100%;font-family:var(--font);background:var(--off);color:var(--ink);font-size:14px;line-height:1.5;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;font-family:var(--font);border:none;background:none}
+input,select{font-family:var(--font);border:none;outline:none;background:none;color:var(--ink)}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:4px}
+*{-webkit-tap-highlight-color:transparent}
+
+/* ─ BRAND MARKS ─ */
+.login-brand-mark{display:flex;align-items:center;gap:12px;margin-bottom:32px;position:relative;z-index:1}
+.lbm-icon{font-size:36px;line-height:1}
+.lbm-name{font-family:var(--serif);font-size:32px;font-weight:700;color:#fff;line-height:1;letter-spacing:2px}
+.lbm-sub{font-size:11px;color:rgba(255,255,255,.6);letter-spacing:4px;text-transform:uppercase;margin-top:2px}
+.form-brand-mark{display:none;justify-content:center;margin-bottom:28px}
+.form-brand-mark .lbm-name{color:var(--green)}
+.form-brand-mark .lbm-sub{color:var(--g400)}
+.sb-brand-mark{display:flex;align-items:center;gap:10px;padding:2px 0}
+.sb-brand-icon{font-size:22px;line-height:1;flex-shrink:0}
+.sb-brand-name{font-family:var(--serif);font-size:17px;font-weight:700;color:#fff;line-height:1;letter-spacing:1px}
+.sb-brand-sub{font-size:8px;color:rgba(255,255,255,.5);letter-spacing:3px;text-transform:uppercase;margin-top:2px}
+
+/* ─ LOGIN ─ */
+#login{height:100vh;display:flex;overflow:hidden;background:var(--forest)}
+.login-art{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:56px}
+.login-art::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 30% 40%,rgba(56,149,93,.35),transparent 70%),radial-gradient(ellipse 50% 80% at 80% 80%,rgba(212,160,23,.18),transparent 60%)}
+.art-bg{position:absolute;inset:0;opacity:.05;background-image:repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(255,255,255,.5) 40px,rgba(255,255,255,.5) 41px),repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(255,255,255,.5) 40px,rgba(255,255,255,.5) 41px)}
+.login-logo{width:200px;margin-bottom:32px;position:relative;z-index:1;filter:drop-shadow(0 4px 24px rgba(0,0,0,.3))}
+.login-h{font-family:var(--serif);font-size:clamp(28px,4vw,52px);font-weight:600;color:#fff;line-height:1.1;margin-bottom:18px;position:relative;z-index:1}
+.login-h em{color:var(--gold-l);font-style:italic}
+.login-sub{font-size:15px;color:rgba(255,255,255,.65);max-width:380px;line-height:1.75;position:relative;z-index:1}
+.login-stats{display:flex;gap:14px;margin-top:44px;position:relative;z-index:1;flex-wrap:wrap}
+.lstat{padding:14px 18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:var(--r-md);backdrop-filter:blur(8px)}
+.lstat-v{font-family:var(--serif);font-size:22px;color:var(--gold-l);font-weight:600;line-height:1}
+.lstat-l{font-size:10px;color:rgba(255,255,255,.5);margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+.login-form{width:min(440px,100%);flex-shrink:0;background:var(--white);display:flex;flex-direction:column;justify-content:center;padding:52px 44px;overflow-y:auto}
+.form-logo{display:none;width:160px;margin:0 auto 28px}
+.login-form h2{font-family:var(--serif);font-size:30px;color:var(--green);margin-bottom:6px;font-weight:600}
+.login-form>p{font-size:13px;color:var(--g400);margin-bottom:28px}
+.ff{margin-bottom:15px}
+.ff label{display:block;font-size:11px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:7px}
+.ff input,.ff select{width:100%;padding:13px 16px;min-height:48px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-md);font-size:15px;transition:var(--trans)}
+.ff input:focus,.ff select:focus{border-color:var(--leaf);background:var(--white);box-shadow:0 0 0 3px rgba(56,149,93,.1)}
+.login-btn{width:100%;padding:15px;background:var(--green);color:#fff;border-radius:var(--r-md);font-size:15px;font-weight:700;transition:var(--trans);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px}
+.login-btn:hover{background:var(--mid);transform:translateY(-1px);box-shadow:var(--sh-md)}
+.quick-roles{margin-top:22px}
+.quick-roles p{font-size:11px;color:var(--g200);margin-bottom:10px;text-align:center}
+.role-chips{display:flex;gap:8px;justify-content:center}
+.role-chip{padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--g100);color:var(--g400);cursor:pointer;transition:var(--trans);min-height:36px}
+.role-chip:hover,.role-chip.on{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* ─ APP ─ */
+#app{height:100vh;display:none;overflow:hidden}
+.shell{display:flex;height:100vh;position:relative}
+
+/* ─ SIDEBAR ─ */
+.sidebar{width:var(--sidebar);background:var(--forest);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;position:relative;z-index:100;transition:width .22s ease,transform .28s cubic-bezier(.32,.72,0,1)}
+.sidebar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:160px;background:linear-gradient(to top,rgba(212,160,23,.06),transparent);pointer-events:none}
+.sb-logo{padding:16px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+.sb-logo img{width:130px;height:auto}
+.sb-nav{flex:1;padding:12px 8px;overflow-y:auto;overflow-x:hidden}
+.sb-sec{font-size:9px;font-weight:700;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:2px;padding:12px 10px 6px;white-space:nowrap;overflow:hidden}
+.ni{display:flex;align-items:center;gap:10px;padding:10px;min-height:44px;border-radius:var(--r-sm);color:rgba(255,255,255,.6);font-size:13px;font-weight:500;cursor:pointer;transition:var(--trans);margin-bottom:2px;position:relative;white-space:nowrap}
+.ni:hover{background:rgba(255,255,255,.09);color:#fff}
+.ni.active{background:rgba(255,255,255,.14);color:#fff;font-weight:600}
+.ni.active::before{content:'';position:absolute;left:0;top:22%;bottom:22%;width:3px;background:var(--gold);border-radius:0 3px 3px 0}
+.ni-ico{width:18px;height:18px;flex-shrink:0;opacity:.75}
+.ni.active .ni-ico{opacity:1}
+.ni-lbl{flex:1;overflow:hidden;text-overflow:ellipsis}
+.nb{margin-left:auto;background:var(--gold);color:var(--forest);font-size:9px;font-weight:800;padding:2px 6px;border-radius:8px;flex-shrink:0}
+.nb.warn{background:#fde68a;color:#92400e}
+.sb-foot{padding:12px 8px;border-top:1px solid rgba(255,255,255,.08);flex-shrink:0;position:relative;z-index:1}
+.sb-user{display:flex;align-items:center;gap:10px;padding:8px 6px;min-height:48px;border-radius:var(--r-sm);cursor:pointer;transition:var(--trans)}
+.sb-user:hover{background:rgba(255,255,255,.07)}
+.sb-av{width:34px;height:34px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--forest);flex-shrink:0}
+.sb-ui{flex:1;overflow:hidden}
+.sb-un{font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden}
+.sb-ur{font-size:10px;color:rgba(255,255,255,.45)}
+.logout-btn{color:rgba(255,255,255,.35);transition:var(--trans);flex-shrink:0;padding:4px}
+.logout-btn:hover{color:rgba(255,255,255,.7)}
+.logout-btn svg{width:16px;height:16px}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99;backdrop-filter:blur(2px)}
+
+/* ─ TOPBAR ─ */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.topbar{height:var(--topbar);background:var(--white);border-bottom:1px solid var(--g100);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;z-index:50;box-shadow:0 1px 0 var(--g100)}
+.ham{display:none;width:40px;height:40px;border-radius:var(--r-sm);background:var(--g50);border:1.5px solid var(--g100);align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.ham svg{width:18px;height:18px;color:var(--g600)}
+.tb-title{font-family:var(--serif);font-size:20px;color:var(--green);font-weight:600;white-space:nowrap}
+.tb-search{display:flex;align-items:center;gap:8px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm);padding:8px 12px;transition:var(--trans);flex:1;max-width:280px}
+.tb-search:focus-within{border-color:var(--leaf);background:var(--white);box-shadow:0 0 0 3px rgba(56,149,93,.08)}
+.tb-search input{font-size:13px;flex:1;min-width:0}
+.tb-search input::placeholder{color:var(--g200)}
+.tb-search svg{width:15px;height:15px;color:var(--g200);flex-shrink:0}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb-btn{width:38px;height:38px;border-radius:var(--r-sm);background:var(--g50);border:1.5px solid var(--g100);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--trans);position:relative}
+.tb-btn:hover{border-color:var(--leaf);background:var(--pale)}
+.tb-btn svg{width:17px;height:17px;color:var(--g400)}
+.notif-pip{position:absolute;top:6px;right:6px;width:6px;height:6px;background:var(--gold);border-radius:50%;border:2px solid var(--white)}
+.live-badge{display:flex;align-items:center;gap:6px;padding:5px 12px;background:var(--pale);border:1.5px solid var(--mint);border-radius:20px;font-size:11px;font-weight:700;color:var(--green);white-space:nowrap}
+.live-dot{width:6px;height:6px;background:var(--leaf);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+
+.page-wrap{flex:1;overflow-y:auto;padding:20px;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.page{display:none;animation:pgIn .2s ease}
+.page.show{display:block}
+@keyframes pgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ─ BOTTOM NAV ─ */
+.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:var(--white);border-top:1px solid var(--g100);padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 20px rgba(20,34,25,.08)}
+.bot-nav-inner{display:flex;height:var(--bottom-nav)}
+.bn-i{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--g400);font-size:10px;font-weight:600;transition:var(--trans);padding:6px 4px;position:relative;min-height:44px}
+.bn-i.active{color:var(--green)}
+.bn-i svg{width:22px;height:22px}
+.bn-i.active::before{content:'';position:absolute;top:0;left:25%;right:25%;height:2.5px;background:var(--green);border-radius:0 0 4px 4px}
+.bn-pip{position:absolute;top:6px;right:calc(50% - 16px);width:8px;height:8px;background:var(--gold);border-radius:50%;border:2px solid var(--white)}
+
+/* ─ SHARED COMPONENTS ─ */
+.card{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g100);box-shadow:var(--sh-sm);overflow:hidden}
+.card-h{padding:18px 18px 0}
+.card-b{padding:18px}
+.card-title{font-size:14px;font-weight:700;color:var(--ink)}
+.card-sub{font-size:11px;color:var(--g400);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:var(--r-sm);font-size:13px;font-weight:600;transition:var(--trans);cursor:pointer;border:none;min-height:44px}
+.btn svg{width:15px;height:15px}
+.btn-p{background:var(--green);color:#fff}
+.btn-p:hover{background:var(--mid);box-shadow:var(--sh-sm)}
+.btn-s{background:var(--white);color:var(--g600);border:1.5px solid var(--g100)}
+.btn-s:hover{border-color:var(--leaf);color:var(--green)}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.bg{background:var(--pale);color:var(--green)}
+.bo{background:var(--gold-p);color:#7a5a00}
+.br{background:#fdecea;color:var(--danger)}
+.bw{background:#fff7ed;color:var(--warn)}
+.bb{background:#e8f0fe;color:var(--info)}
+
+/* ─ DASHBOARD ─ */
+.dash-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.dash-greet{font-family:var(--serif);font-size:clamp(20px,3.5vw,28px);color:var(--ink);font-weight:600}
+.dash-date{font-size:12px;color:var(--g400);margin-top:4px}
+.dash-acts{display:flex;gap:8px;flex-wrap:wrap}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi{background:var(--white);border-radius:var(--r-lg);padding:16px;border:1px solid var(--g100);box-shadow:var(--sh-sm);position:relative;overflow:hidden;transition:var(--trans)}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
+.kpi-ac{position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-ico{width:38px;height:38px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.kpi-ico svg{width:20px;height:20px}
+.kpi-v{font-family:var(--serif);font-size:26px;font-weight:600;color:var(--ink);line-height:1}
+.kpi-l{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-top:6px}
+.kpi-d{font-size:11px;margin-top:6px;display:flex;align-items:center;gap:3px;font-weight:600}
+.kpi-d.up{color:var(--leaf)}
+.kpi-d.dn{color:var(--danger)}
+.dash-grid{display:grid;grid-template-columns:1fr 300px;gap:16px}
+.dash-right{display:flex;flex-direction:column;gap:16px}
+.chart-area{height:190px}
+.tpl{display:flex;flex-direction:column;gap:11px;padding-top:4px}
+.tpi{display:flex;align-items:center;gap:10px}
+.tpr{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
+.tpn{flex:1;min-width:0}
+.tpnm{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tpnc{font-size:10px;color:var(--g400)}
+.tpbw{width:60px;height:5px;background:var(--g100);border-radius:3px;flex-shrink:0}
+.tpb{height:100%;background:var(--leaf);border-radius:3px}
+.tpa{font-size:11px;font-weight:700;color:var(--g600);min-width:52px;text-align:right}
+.al{display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.ar{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--r-sm);background:var(--g50);border:1px solid var(--g100)}
+.a-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.a-t{font-size:12px;font-weight:500;color:var(--ink)}
+.a-s{font-size:10px;color:var(--g400);margin-top:1px}
+.cl{display:flex;flex-direction:column;gap:10px}
+.cr{display:flex;align-items:center;gap:10px}
+.cav{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
+.cn{flex:1;font-size:12px;font-weight:600;color:var(--ink)}
+.cbw{width:70px;height:5px;background:var(--g100);border-radius:3px;flex-shrink:0}
+.cb{height:100%;background:var(--mid);border-radius:3px}
+.ca{font-size:11px;font-weight:700;color:var(--green);min-width:65px;text-align:right}
+
+/* ─ POS ─ */
+#pos-page{padding:0!important;display:none;overflow:hidden}
+#pos-page.show{display:flex!important;height:calc(100vh - var(--topbar))}
+.pos-prods{flex:1;display:flex;flex-direction:column;padding:14px;overflow:hidden;min-width:0}
+.pos-sb{display:flex;align-items:center;gap:10px;background:var(--white);border:2px solid var(--g100);border-radius:var(--r-md);padding:12px 16px;margin-bottom:12px;transition:var(--trans);flex-shrink:0}
+.pos-sb:focus-within{border-color:var(--leaf);box-shadow:0 0 0 3px rgba(56,149,93,.08)}
+.pos-sb input{flex:1;font-size:15px}
+.pos-sb input::placeholder{color:var(--g200)}
+.pos-sb svg{width:18px;height:18px;color:var(--g400);flex-shrink:0}
+.pos-cats{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;flex-shrink:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.pos-cats::-webkit-scrollbar{height:0}
+.cpill{padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;min-height:36px;border:1.5px solid var(--g100);background:var(--white);color:var(--g400);cursor:pointer;transition:var(--trans);white-space:nowrap;flex-shrink:0}
+.cpill:hover{border-color:var(--leaf);color:var(--green)}
+.cpill.on{background:var(--green);color:#fff;border-color:var(--green)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;overflow-y:auto;flex:1;align-content:start;-webkit-overflow-scrolling:touch}
+.pcard{background:var(--white);border-radius:var(--r-md);padding:14px;border:1.5px solid var(--g100);cursor:pointer;transition:var(--trans);position:relative;user-select:none}
+.pcard:hover{border-color:var(--leaf);transform:translateY(-2px);box-shadow:var(--sh-md)}
+.pcard:active{transform:scale(.97);border-color:var(--green)}
+.pcard.oos{opacity:.45;cursor:not-allowed;pointer-events:none}
+.pce{font-size:28px;margin-bottom:8px;line-height:1}
+.pcn{font-size:12px;font-weight:600;color:var(--ink);line-height:1.3;margin-bottom:3px}
+.pcs{font-size:9px;color:var(--g200);font-family:monospace;letter-spacing:.5px;margin-bottom:8px}
+.pcb{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px}
+.pcp{font-size:14px;font-weight:800;color:var(--green)}
+.pcst{font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;white-space:nowrap}
+.pcst.ok{background:var(--pale);color:var(--green)}
+.pcst.low{background:#fff7ed;color:var(--warn)}
+.pcst.oos{background:#fdecea;color:var(--danger)}
+.afl{position:absolute;inset:0;background:rgba(56,149,93,.14);border-radius:var(--r-md);opacity:0;pointer-events:none;transition:opacity .2s}
+.pos-cart{width:320px;flex-shrink:0;background:var(--white);border-left:1px solid var(--g100);display:flex;flex-direction:column;overflow:hidden}
+.cart-hd{padding:14px 16px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.cart-hdl h3{font-size:14px;font-weight:700;color:var(--ink)}
+.cart-hdl p{font-size:11px;color:var(--g400);margin-top:1px}
+.cart-clr{font-size:11px;font-weight:700;color:var(--g200);padding:6px 12px;border-radius:6px;border:1px solid var(--g100);transition:var(--trans);min-height:34px}
+.cart-clr:hover{color:var(--danger);border-color:var(--danger)}
+.cart-bd{flex:1;overflow-y:auto;padding:10px 14px;-webkit-overflow-scrolling:touch}
+.cart-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--g200);text-align:center;gap:8px}
+.cart-empty svg{width:44px;height:44px;opacity:.35}
+.cart-empty p{font-size:13px;font-weight:600}
+.cart-empty small{font-size:11px}
+.ci{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--g50)}
+.ci-e{font-size:20px;flex-shrink:0}
+.ci-inf{flex:1;min-width:0}
+.ci-n{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-p{font-size:10px;color:var(--g400)}
+.ci-q{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.qb{width:26px;height:26px;border-radius:7px;background:var(--g50);color:var(--g600);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--trans);border:1px solid var(--g100)}
+.qb:hover{background:var(--green);color:#fff;border-color:var(--green)}
+.qn{font-size:13px;font-weight:700;min-width:20px;text-align:center;color:var(--ink)}
+.ci-t{font-size:12px;font-weight:800;color:var(--green);min-width:58px;text-align:right;flex-shrink:0}
+.ci-rm{color:var(--g200);font-size:18px;line-height:1;cursor:pointer;padding:4px;transition:var(--trans);flex-shrink:0}
+.ci-rm:hover{color:var(--danger)}
+.cart-ft{padding:14px 16px;border-top:1px solid var(--g100);flex-shrink:0}
+.tot-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.tot-l{color:var(--g400)}
+.tot-v{font-weight:600;color:var(--ink)}
+.tot-grand{border-top:1.5px solid var(--g100);padding-top:8px;margin-top:8px;margin-bottom:12px}
+.tot-grand .tot-l{font-size:14px;font-weight:700;color:var(--ink)}
+.tot-grand .tot-v{font-size:22px;font-family:var(--serif);color:var(--green);font-weight:600}
+.pay-chips{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.pchip{padding:9px 4px;text-align:center;border-radius:var(--r-sm);font-size:11px;font-weight:700;border:1.5px solid var(--g100);background:var(--g50);color:var(--g400);cursor:pointer;transition:var(--trans);min-height:44px;display:flex;align-items:center;justify-content:center}
+.pchip:hover{border-color:var(--leaf);color:var(--green)}
+.pchip.on{background:var(--green);color:#fff;border-color:var(--green)}
+.chk-btn{width:100%;padding:14px;background:var(--gold);color:#fff;border-radius:var(--r-md);font-size:15px;font-weight:800;transition:var(--trans);display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px}
+.chk-btn:hover:not(:disabled){background:var(--gold-l);transform:translateY(-1px);box-shadow:var(--sh-md)}
+.chk-btn:disabled{opacity:.5;cursor:not-allowed}
+.mob-fab{display:none;position:fixed;bottom:calc(var(--bottom-nav) + 16px + env(safe-area-inset-bottom));right:16px;z-index:80;background:var(--green);color:#fff;border-radius:50px;padding:12px 20px;font-size:14px;font-weight:700;gap:8px;box-shadow:var(--sh-lg);align-items:center;transition:var(--trans)}
+.mob-fab:hover{background:var(--mid);transform:scale(1.05)}
+.fab-cnt{background:var(--gold);color:var(--forest);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
+.drawer{display:none;position:fixed;inset:0;z-index:150}
+.drawer-ov{position:absolute;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px)}
+.drawer-panel{position:absolute;bottom:0;left:0;right:0;background:var(--white);border-radius:20px 20px 0 0;max-height:88vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom)}
+.drawer.open .drawer-panel{transform:translateY(0)}
+.drawer.open{display:block}
+.dh{width:40px;height:4px;background:var(--g200);border-radius:4px;margin:12px auto 16px;flex-shrink:0}
+
+/* ─ INVENTORY ─ */
+.inv-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.inv-srch{display:flex;align-items:center;gap:8px;background:var(--white);border:1.5px solid var(--g100);border-radius:var(--r-sm);padding:10px 14px;flex:1;min-width:200px;transition:var(--trans)}
+.inv-srch:focus-within{border-color:var(--leaf)}
+.inv-srch input{flex:1;font-size:13px}
+.inv-srch svg{width:15px;height:15px;color:var(--g200);flex-shrink:0}
+.inv-tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;min-width:600px}
+th{text-align:left;font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;padding:10px 14px;border-bottom:1.5px solid var(--g100);white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--g50);vertical-align:middle}
+tbody tr:hover td{background:var(--g50)}
+.pt{width:32px;height:32px;background:var(--pale);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tn{font-weight:600;color:var(--ink)}
+.ab{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid var(--g100);background:var(--white);cursor:pointer;transition:var(--trans)}
+.ab svg{width:13px;height:13px}
+.ab:hover.edit{border-color:var(--leaf);color:var(--green)}
+.ab:hover.del{border-color:var(--danger);color:var(--danger)}
+.inv-cards{display:none;flex-direction:column;gap:10px}
+.icard{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--g100);padding:14px;box-shadow:var(--sh-sm)}
+.ict{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.ice{font-size:28px}
+.icinfo{flex:1;min-width:0}
+.icn{font-weight:700;font-size:14px;color:var(--ink)}
+.ics{font-size:10px;color:var(--g200);font-family:monospace}
+.icm{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid var(--g100)}
+.icml{font-size:9px;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;font-weight:700;text-align:center}
+.icmv{font-size:13px;font-weight:700;color:var(--ink);margin-top:2px;text-align:center}
+.icact{display:flex;gap:8px;margin-top:12px}
+.icbtn{flex:1;padding:9px;border-radius:var(--r-sm);font-size:12px;font-weight:600;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;transition:var(--trans);cursor:pointer;border:none}
+.ice-btn{background:var(--pale);color:var(--green);border:1px solid var(--mint)}
+.icd-btn{background:#fdecea;color:var(--danger);border:1px solid #f5c6c3}
+
+/* ─ REPORTS ─ */
+.rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.rch{height:170px}
+.pm-bars{margin-top:14px;display:flex;flex-direction:column;gap:9px}
+.pmr{display:flex;align-items:center;gap:10px}
+.pml{font-size:11px;color:var(--g600);width:55px;font-weight:600;flex-shrink:0}
+.pmt{flex:1;height:7px;background:var(--g100);border-radius:4px;overflow:hidden}
+.pmf{height:100%;border-radius:4px}
+.pmp{font-size:11px;font-weight:700;color:var(--g600);min-width:30px;text-align:right}
+.txn-tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* ─ RECEIPT ─ */
+.overlay{position:fixed;inset:0;background:rgba(10,25,15,.6);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s;backdrop-filter:blur(4px);padding:16px}
+.overlay.show{opacity:1;pointer-events:all}
+.rp{background:var(--white);border-radius:var(--r-xl);width:100%;max-width:360px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(20,34,25,.22);transform:scale(.94) translateY(12px);transition:transform .25s ease}
+.overlay.show .rp{transform:scale(1) translateY(0)}
+.rpt{background:var(--forest);padding:24px 20px;text-align:center;border-radius:var(--r-xl) var(--r-xl) 0 0;position:relative;overflow:hidden}
+.rpt::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 50% 120%,rgba(212,160,23,.2),transparent 70%)}
+.rpl{font-family:var(--serif);font-size:22px;color:#fff;font-weight:700;position:relative;z-index:1}
+.rpa{font-size:10px;color:rgba(255,255,255,.55);margin-top:4px;line-height:1.7;position:relative;z-index:1}
+.rpb{padding:18px 20px}
+.rpmeta{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px;padding-bottom:14px;border-bottom:1.5px dashed var(--g100)}
+.rpmeta-i{text-align:center}
+.rpml{font-size:9px;color:var(--g200);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.rpmv{font-size:12px;font-weight:700;color:var(--ink);margin-top:3px}
+.rpi{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--g50)}
+.rpin{font-size:12px;font-weight:600;color:var(--ink)}
+.rpiq{font-size:10px;color:var(--g400)}
+.rpit{font-size:12px;font-weight:700;color:var(--ink)}
+.rptots{border-top:1.5px solid var(--g100);padding-top:10px;margin-bottom:14px}
+.rptr{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;color:var(--g400)}
+.rptr span:last-child{font-weight:600;color:var(--ink)}
+.rpgrand{display:flex;justify-content:space-between;align-items:center;background:var(--pale);padding:12px;border-radius:var(--r-sm);margin-top:8px}
+.rpgl{font-size:12px;font-weight:800;color:var(--green)}
+.rpgv{font-family:var(--serif);font-size:26px;font-weight:600;color:var(--green)}
+.rpfoot{text-align:center;padding:0 0 6px}
+.rpfoot p{font-size:11px;color:var(--g400);margin-bottom:3px}
+.rpbc{display:flex;justify-content:center;gap:1.5px;margin:12px auto;width:fit-content}
+.bcbar{height:34px;background:var(--ink);opacity:.8}
+.rpcode{font-size:9px;letter-spacing:2px;color:var(--g200);text-align:center;margin-top:4px}
+.rpacts{display:flex;gap:8px;padding:14px 20px;border-top:1px solid var(--g100)}
+.rpbtn{flex:1;padding:12px;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer;transition:var(--trans);border:none;min-height:48px}
+.rpprint{background:var(--green);color:#fff}
+.rpprint:hover{background:var(--mid)}
+.rpnew{background:var(--g50);color:var(--g600);border:1.5px solid var(--g100)}
+
+/* ─ SETTINGS ─ */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--g50);gap:12px}
+.srow:last-child{border-bottom:none}
+.slbl{font-size:13px;font-weight:600;color:var(--ink)}
+.sdesc{font-size:11px;color:var(--g400);margin-top:2px}
+.toggle{width:44px;height:24px;background:var(--g200);border-radius:12px;position:relative;cursor:pointer;transition:var(--trans);flex-shrink:0}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s ease;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.toggle.on::after{transform:translateX(20px)}
+
+/* ─ SIMPLE PAGE ─ */
+.spage{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;text-align:center;gap:16px;padding:24px}
+.spage .sp-ico{font-size:52px}
+.spage h2{font-family:var(--serif);font-size:26px;color:var(--green);font-weight:600}
+.spage p{font-size:13px;color:var(--g400);max-width:360px;line-height:1.7}
+.sp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px;max-width:420px;width:100%}
+.spstat{background:var(--white);border:1px solid var(--g100);border-radius:var(--r-md);padding:14px 12px}
+.spstv{font-family:var(--serif);font-size:22px;font-weight:600}
+.spstl{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-top:4px}
+
+/* ─ RESPONSIVE ─ */
+@media(max-width:1200px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .dash-grid{grid-template-columns:1fr}
+  .dash-right{display:grid;grid-template-columns:1fr 1fr}
+  .rep-grid{grid-template-columns:1fr}
+}
+@media(max-width:1024px){
+  :root{--sidebar:60px}
+  .sb-logo{justify-content:center;padding:16px}
+  .sb-brand-name,.sb-brand-sub{display:none}
+  .sb-brand-mark{justify-content:center}
+  .sb-brand-icon{font-size:26px}
+  .sb-sec,.ni-lbl,.nb,.sb-un,.sb-ur{display:none}
+  .ni{justify-content:center;padding:11px 10px}
+  .ni.active::before{top:0;bottom:auto;left:0;right:0;width:100%;height:3px;border-radius:0 0 4px 4px}
+  .sb-user{justify-content:center}
+  .sb-ui,.logout-btn{display:none}
+  .live-badge span:last-child{display:none}
+}
+@media(max-width:640px){
+  :root{--bottom-nav:60px}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:200;width:260px!important;transform:translateX(-110%)}
+  .sidebar.open{transform:translateX(0)}
+  .sb-overlay{display:block;opacity:0;pointer-events:none;transition:opacity .28s}
+  .sidebar.open~.sb-overlay{opacity:1;pointer-events:all}
+  .sb-logo{justify-content:flex-start;padding:16px}
+  .sb-brand-name,.sb-brand-sub,.sb-brand-icon{display:block!important}
+  .sb-brand-mark{justify-content:flex-start}
+  .sb-brand-icon{font-size:22px}
+  .sb-sec,.ni-lbl,.nb,.sb-un,.sb-ur,.sb-ui,.logout-btn{display:block!important}
+  .ni{justify-content:flex-start;padding:10px 12px}
+  .ni.active::before{top:20%;bottom:20%;right:auto;left:0;width:3px;height:auto;border-radius:0 3px 3px 0}
+  .nb{display:inline-block!important}
+  .ham{display:flex}
+  .tb-title{font-size:17px}
+  .tb-search{max-width:160px;padding:8px 10px}
+  .live-badge{display:none}
+  .page-wrap{padding:14px;padding-bottom:calc(var(--bottom-nav) + 20px + env(safe-area-inset-bottom))}
+  .bot-nav{display:block}
+  .kpi-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .kpi-v{font-size:22px}
+  .dash-top{flex-direction:column;gap:12px}
+  .dash-acts .btn span{display:none}
+  .dash-acts .btn{padding:10px 14px}
+  .dash-grid{grid-template-columns:1fr}
+  .dash-right{grid-template-columns:1fr}
+  #pos-page.show{flex-direction:column!important;height:calc(100vh - var(--topbar) - var(--bottom-nav) - env(safe-area-inset-bottom))}
+  .pos-cart{display:none!important}
+  .mob-fab{display:flex!important}
+  .pgrid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+  .inv-tw{display:none}
+  .inv-cards{display:flex}
+  .rep-grid{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr}
+  .overlay{padding:0;align-items:flex-end}
+  .rp{border-radius:var(--r-xl) var(--r-xl) 0 0;max-height:95vh;transform:translateY(100%)}
+  .overlay.show .rp{transform:translateY(0)}
+}
+@media(max-width:400px){
+  .pgrid{grid-template-columns:repeat(auto-fill,minmax(105px,1fr))}
+  .sp-stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-art">
+    <div class="art-bg"></div>
+    <div class="login-brand-mark">
+    <div class="lbm-icon">🌿</div>
+    <div><div class="lbm-name">PENDO</div><div class="lbm-sub">PACKAGING</div></div>
+  </div>
+    <div class="login-h">Smart POS for a <em>growing</em> Kenya.</div>
+    <div class="login-sub">Manage inventory, process sales, track staff performance and grow your packaging business — all in one modern platform.</div>
+    <div class="login-stats">
+      <div class="lstat"><div class="lstat-v">500+</div><div class="lstat-l">Products</div></div>
+      <div class="lstat"><div class="lstat-v">M-Pesa</div><div class="lstat-l">Integrated</div></div>
+      <div class="lstat"><div class="lstat-v">Offline</div><div class="lstat-l">Ready</div></div>
+    </div>
+  </div>
+  <div class="login-form">
+    <div class="login-brand-mark form-brand-mark">
+    <div class="lbm-icon">🌿</div>
+    <div><div class="lbm-name">PENDO</div><div class="lbm-sub">PACKAGING</div></div>
+  </div>
+    <h2>Welcome back</h2>
+    <p>Sign in to your business dashboard</p>
+    <div class="ff"><label>Username</label><input type="text" id="lu" value="admin" autocomplete="username"></div>
+    <div class="ff"><label>Password</label><input type="password" id="lp" value="password" autocomplete="current-password"></div>
+    <div class="ff"><label>Role</label><select id="lr"><option value="admin">Admin / Manager</option><option value="cashier">Cashier</option><option value="super">Super Admin</option></select></div>
+    <button class="login-btn" onclick="doLogin()">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/></svg>
+      Sign In to Dashboard
+    </button>
+    <div class="quick-roles">
+      <p>— Quick demo login as —</p>
+      <div class="role-chips">
+        <div class="role-chip on" onclick="setRole('admin',this)">Admin</div>
+        <div class="role-chip" onclick="setRole('cashier',this)">Cashier</div>
+        <div class="role-chip" onclick="setRole('super',this)">Super</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<div class="shell">
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sb-logo"><div class="sb-brand-mark">
+    <div class="sb-brand-icon">🌿</div>
+    <div><div class="sb-brand-name">PENDO</div><div class="sb-brand-sub">PACKAGING</div></div>
+  </div></div>
+  <div class="sb-nav">
+    <div class="sb-sec">Main</div>
+    <div class="ni active" data-page="dashboard" onclick="go('dashboard',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span class="ni-lbl">Dashboard</span></div>
+    <div class="ni" data-page="pos" onclick="go('pos',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg><span class="ni-lbl">Point of Sale</span><span class="nb">3</span></div>
+    <div class="sb-sec">Management</div>
+    <div class="ni" data-page="inventory" onclick="go('inventory',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span class="ni-lbl">Inventory</span><span class="nb warn">7</span></div>
+    <div class="ni" data-page="reports" onclick="go('reports',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg><span class="ni-lbl">Reports</span></div>
+    <div class="ni" data-page="tot-report" onclick="go('tot-report',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg><span class="ni-lbl">KRA TOT Report</span></div>
+    <div class="ni" data-page="customers" onclick="go('customers',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span class="ni-lbl">Customers</span></div>
+    <div class="ni" data-page="suppliers" onclick="go('suppliers',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/></svg><span class="ni-lbl">Suppliers</span></div>
+    <div class="ni" data-page="expenses" onclick="go('expenses',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg><span class="ni-lbl">Expenses</span></div>
+    <div class="sb-sec">System</div>
+    <div class="ni" data-page="settings" onclick="go('settings',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><span class="ni-lbl">Settings</span></div>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-user">
+      <div class="sb-av" id="av">AM</div>
+      <div class="sb-ui"><div class="sb-un" id="uname">Admin Manager</div><div class="sb-ur" id="urole">Administrator</div></div>
+      <button class="logout-btn" onclick="logout()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+<div class="sb-overlay" id="sbOv" onclick="closeSB()"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <button class="ham" onclick="toggleSB()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
+    <div class="tb-title" id="page-title">Dashboard</div>
+    <div class="tb-search">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input placeholder="Search…">
+    </div>
+    <div class="tb-right">
+      <div class="tb-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg><div class="notif-pip"></div></div>
+      <button class="dm-btn" onclick="toggleDark()" title="Toggle dark/light mode" id="dmBtn">
+        <svg class="ico-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+        <svg class="ico-sun" viewBox="0 0 24 24" fill="currentColor"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-12.37-1.06 1.06a.996.996 0 0 0 0 1.41c.39.39 1.03.39 1.41 0l1.06-1.06a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0zM7.05 18.36l-1.06 1.06a.996.996 0 0 0 0 1.41c.39.39 1.03.39 1.41 0l1.06-1.06a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0z"/></svg>
+      </button>
+      <div class="live-badge"><div class="live-dot"></div><span>Live</span></div>
+    </div>
+  </header>
+
+  <!-- DASHBOARD PAGE -->
+  <div id="dashboard" class="page-wrap page show">
+    <div class="dash-top">
+      <div><div class="dash-greet" id="greeting">Good morning, Manager 👋</div><div class="dash-date" id="dash-date"></div></div>
+      <div class="dash-acts">
+        <button class="btn btn-s"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><span>Export</span></button>
+        <button class="btn btn-p" onclick="go('pos',document.querySelector('[data-page=pos]'))"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg><span>New Sale</span></button>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--green),var(--leaf))"></div><div class="kpi-ico" style="background:var(--pale)"><svg viewBox="0 0 24 24" fill="var(--green)"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div><div class="kpi-v" id="dash-kpi-revenue">KES 84,320</div><div class="kpi-l">Today Revenue</div><div class="kpi-d up">↑ 12.4% vs yesterday</div></div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--gold),var(--gold-l))"></div><div class="kpi-ico" style="background:var(--gold-p)"><svg viewBox="0 0 24 24" fill="var(--gold)"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div><div class="kpi-v">347</div><div class="kpi-l">Customers Today</div><div class="kpi-d up">↑ 8.1%</div></div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--danger),#e74c3c)"></div><div class="kpi-ico" style="background:#fdecea"><svg viewBox="0 0 24 24" fill="var(--danger)"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div><div class="kpi-v" id="dash-kpi-tot">KES 1,264.80</div><div class="kpi-l">Monthly TOT (1.5%)</div><div class="kpi-d dn" id="dash-kpi-tot-sub">Est. tax payable</div></div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--info),#4f8df7)"></div><div class="kpi-ico" style="background:#e8f0fe"><svg viewBox="0 0 24 24" fill="var(--info)"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg></div><div class="kpi-v" id="dash-kpi-monthly">KES 312,400</div><div class="kpi-l">Month Revenue</div><div class="kpi-d up">↑ 18.4% vs last month</div></div>
+    </div>
+    <div class="dash-grid">
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-h" style="padding-bottom:16px;display:flex;align-items:center;justify-content:space-between"><div><div class="card-title">Revenue Overview</div><div class="card-sub">Last 8 weeks</div></div><span class="badge bg">+18.4%</span></div>
+          <div class="card-b" style="padding-top:0"><div class="chart-area"><canvas id="dashBar"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h" style="padding-bottom:16px"><div class="card-title">Recent Transactions</div><div class="card-sub">Today</div></div>
+          <div class="card-b" style="padding-top:0;overflow-x:auto">
+            <table style="min-width:400px"><thead><tr><th>Receipt</th><th>Customer</th><th>Items</th><th>Amount</th><th>Pay</th><th>Time</th></tr></thead>
+            <tbody>
+              <tr><td style="font-weight:600;font-size:11px;font-family:monospace">#REC-0041</td><td>Walk-in</td><td><span class="badge bb">4</span></td><td style="font-weight:700;color:var(--green)">KES 2,450</td><td><span class="badge bg">M-Pesa</span></td><td style="color:var(--g400);font-size:11px">09:42 AM</td></tr>
+              <tr><td style="font-weight:600;font-size:11px;font-family:monospace">#REC-0040</td><td>Mama Njeri</td><td><span class="badge bb">2</span></td><td style="font-weight:700;color:var(--green)">KES 780</td><td><span class="badge bo">Cash</span></td><td style="color:var(--g400);font-size:11px">09:18 AM</td></tr>
+              <tr><td style="font-weight:600;font-size:11px;font-family:monospace">#REC-0039</td><td>Wanjiku Stores</td><td><span class="badge bb">8</span></td><td style="font-weight:700;color:var(--green)">KES 6,200</td><td><span class="badge bg">M-Pesa</span></td><td style="color:var(--g400);font-size:11px">08:55 AM</td></tr>
+              <tr><td style="font-weight:600;font-size:11px;font-family:monospace">#REC-0038</td><td>Tasha Boutique</td><td><span class="badge bb">12</span></td><td style="font-weight:700;color:var(--green)">KES 11,400</td><td><span class="badge bb">Card</span></td><td style="color:var(--g400);font-size:11px">08:31 AM</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+      <div class="dash-right">
+        <div class="card"><div class="card-h"><div class="card-title">Top Products</div><div class="card-sub">By revenue today</div></div><div class="card-b"><div class="tpl">
+          <div class="tpi"><div class="tpr" style="background:var(--gold-p);color:var(--gold)">1</div><div class="tpn"><div class="tpnm">Non-Woven Bags</div><div class="tpnc">Bags</div></div><div class="tpbw"><div class="tpb" style="width:100%"></div></div><div class="tpa">KES 18.4K</div></div>
+          <div class="tpi"><div class="tpr" style="background:var(--pale);color:var(--green)">2</div><div class="tpn"><div class="tpnm">Paper Cups 8oz</div><div class="tpnc">Cups</div></div><div class="tpbw"><div class="tpb" style="width:75%"></div></div><div class="tpa">KES 13.8K</div></div>
+          <div class="tpi"><div class="tpr" style="background:var(--g50);color:var(--g400)">3</div><div class="tpn"><div class="tpnm">Zipper Pouches</div><div class="tpnc">Pouches</div></div><div class="tpbw"><div class="tpb" style="width:60%"></div></div><div class="tpa">KES 11.1K</div></div>
+          <div class="tpi"><div class="tpr" style="background:var(--g50);color:var(--g400)">4</div><div class="tpn"><div class="tpnm">Facial Tissue</div><div class="tpnc">Tissue</div></div><div class="tpbw"><div class="tpb" style="width:45%"></div></div><div class="tpa">KES 8.3K</div></div>
+          <div class="tpi"><div class="tpr" style="background:var(--g50);color:var(--g400)">5</div><div class="tpn"><div class="tpnm">Baby Diapers L</div><div class="tpnc">Diapers</div></div><div class="tpbw"><div class="tpb" style="width:38%"></div></div><div class="tpa">KES 7.0K</div></div>
+        </div></div></div>
+        <div class="card"><div class="card-h"><div class="card-title">Stock Alerts</div><div class="card-sub">Needs attention</div></div><div class="card-b"><div class="al">
+          <div class="ar"><div class="a-dot" style="background:var(--danger)"></div><div><div class="a-t">Non-Woven Bags (L)</div><div class="a-s">0 units — Out of stock</div></div></div>
+          <div class="ar"><div class="a-dot" style="background:var(--warn)"></div><div><div class="a-t">Paper Cups 12oz</div><div class="a-s">8 units — Low stock</div></div></div>
+          <div class="ar"><div class="a-dot" style="background:var(--warn)"></div><div><div class="a-t">Zipper Pouches Clear</div><div class="a-s">5 units — Critical</div></div></div>
+        </div></div></div>
+        <div class="card"><div class="card-h"><div class="card-title">Cashier Performance</div><div class="card-sub">Today</div></div><div class="card-b"><div class="cl">
+          <div class="cr"><div class="cav" style="background:var(--pale);color:var(--green)">FM</div><div class="cn">Faith Mutua</div><div class="cbw"><div class="cb" style="width:100%"></div></div><div class="ca">KES 38,400</div></div>
+          <div class="cr"><div class="cav" style="background:var(--gold-p);color:var(--gold)">JK</div><div class="cn">James Kariuki</div><div class="cbw"><div class="cb" style="width:72%"></div></div><div class="ca">KES 27,600</div></div>
+          <div class="cr"><div class="cav" style="background:#e8f0fe;color:var(--info)">AW</div><div class="cn">Alice Wanjiku</div><div class="cbw"><div class="cb" style="width:48%"></div></div><div class="ca">KES 18,320</div></div>
+        </div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POS PAGE -->
+  <div id="pos-page" class="page">
+    <div class="pos-prods">
+      <div class="pos-sb">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input id="pos-search" placeholder="Search products or scan barcode…" oninput="filterProds()">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="color:var(--green);cursor:pointer"><path d="M1 5h2v14H1zm4 0h1v14H5zm2 0h3v14H7zm4 0h1v14h-1zm3 0h2v14h-2zm3 0h1v14h-1zm2 0h2v14h-2z"/></svg>
+      </div>
+      <div class="pos-cats">
+        <div class="cpill on" onclick="setCat('All',this)">All</div>
+        <div class="cpill" onclick="setCat('Bags',this)">🛍️ Bags</div>
+        <div class="cpill" onclick="setCat('Cups',this)">☕ Cups</div>
+        <div class="cpill" onclick="setCat('Pouches',this)">📦 Pouches</div>
+        <div class="cpill" onclick="setCat('Tissue',this)">🧻 Tissue</div>
+        <div class="cpill" onclick="setCat('Diapers',this)">👶 Diapers</div>
+        <div class="cpill" onclick="setCat('Sanitary',this)">💊 Sanitary</div>
+      </div>
+      <div class="pgrid" id="pgrid"></div>
+    </div>
+    <div class="pos-cart">
+      <div class="cart-hd"><div class="cart-hdl"><h3>Current Sale</h3><p id="cart-count">0 items</p></div><button class="cart-clr" onclick="clearCart()">Clear</button></div>
+      <div class="cart-bd" id="cart-bd"></div>
+      <div class="cart-ft">
+        <div class="tot-row"><span class="tot-l">Subtotal</span><span class="tot-v" id="c-sub">KES 0</span></div>
+        <div class="tot-row tot-grand"><span class="tot-l">Total</span><span class="tot-v" id="c-tot">KES 0</span></div>
+        <div class="pay-chips">
+          <div class="pchip on" id="pc-cash" onclick="selPay('cash')">💵 Cash</div>
+          <div class="pchip" id="pc-mpesa" onclick="selPay('mpesa')">📱 M-Pesa</div>
+          <div class="pchip" id="pc-card" onclick="selPay('card')">💳 Card</div>
+        </div>
+        <button class="chk-btn" id="chk-btn" onclick="checkout()" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Complete Sale
+        </button>
+      </div>
+    </div>
+    <button class="mob-fab" id="cartFab" onclick="openDrawer()">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+      Cart <div class="fab-cnt" id="fabCnt">0</div>
+    </button>
+  </div>
+
+  <!-- INVENTORY -->
+  <div id="inventory" class="page-wrap page">
+    <div class="inv-bar">
+      <div class="inv-srch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input placeholder="Search inventory…"></div>
+      <button class="btn btn-s"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>Filter</button>
+      <button class="btn btn-p"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Add Product</button>
+    </div>
+    <div class="card">
+      <div class="inv-tw"><table><thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Retail</th><th>Cost</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
+      <div class="inv-cards" id="inv-cards"></div>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div id="reports" class="page-wrap page">
+    <div class="dash-top" style="margin-bottom:16px">
+      <div><div class="dash-greet">Sales Reports</div><div class="dash-date">May 2026 — KRA TOT Compliant</div></div>
+      <div class="dash-acts"><button class="btn btn-s" onclick="exportReportsCSV()"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><span>Export CSV</span></button><button class="btn btn-p" onclick="exportReportsPDF()"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg><span>Export PDF</span></button></div>
+    </div>
+    <div class="rep-grid">
+      <div class="card"><div class="card-h"><div class="card-title">Weekly Revenue</div><div class="card-sub">KES trend</div></div><div class="card-b"><div class="rch"><canvas id="repBar"></canvas></div></div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Payment Methods</div><div class="card-sub">Split</div></div><div class="card-b">
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <canvas id="repDonut" width="110" height="110"></canvas>
+          <div class="pm-bars" style="flex:1;min-width:120px">
+            <div class="pmr"><div class="pml">M-Pesa</div><div class="pmt"><div class="pmf" style="width:62%;background:var(--green)"></div></div><div class="pmp">62%</div></div>
+            <div class="pmr"><div class="pml">Cash</div><div class="pmt"><div class="pmf" style="width:28%;background:var(--gold)"></div></div><div class="pmp">28%</div></div>
+            <div class="pmr"><div class="pml">Card</div><div class="pmt"><div class="pmf" style="width:10%;background:var(--info)"></div></div><div class="pmp">10%</div></div>
+          </div>
+        </div>
+      </div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Wholesale vs Retail</div><div class="card-sub">By day</div></div><div class="card-b"><div class="rch"><canvas id="repStack"></canvas></div></div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Revenue by Category</div><div class="card-sub">This month</div></div><div class="card-b"><div class="rch"><canvas id="repCat"></canvas></div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-h" style="padding-bottom:16px"><div class="card-title">Transaction Log</div></div>
+      <div class="card-b" style="padding-top:0"><div class="txn-tw"><table style="min-width:480px"><thead><tr><th>Receipt #</th><th>Cashier</th><th>Items</th><th>Payment</th><th>Total</th><th>Time</th></tr></thead>
+      <tbody>
+        <tr><td style="font-family:monospace;font-size:11px">#REC-0041</td><td>Faith M.</td><td>4</td><td><span class="badge bg">M-Pesa</span></td><td style="font-weight:700">KES 2,450</td><td style="font-size:11px;color:var(--g400)">09:42 AM</td></tr>
+        <tr><td style="font-family:monospace;font-size:11px">#REC-0040</td><td>James K.</td><td>2</td><td><span class="badge bo">Cash</span></td><td style="font-weight:700">KES 780</td><td style="font-size:11px;color:var(--g400)">09:18 AM</td></tr>
+        <tr><td style="font-family:monospace;font-size:11px">#REC-0039</td><td>Faith M.</td><td>8</td><td><span class="badge bg">M-Pesa</span></td><td style="font-weight:700">KES 6,200</td><td style="font-size:11px;color:var(--g400)">08:55 AM</td></tr>
+      </tbody></table></div></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div id="customers" class="page-wrap page"><div class="spage"><div class="sp-ico">👥</div><h2>Customer Management</h2><p>Track loyal customers, purchase history, and manage relationships for Pendo Packaging.</p><div class="sp-stats"><div class="spstat"><div class="spstv" style="color:var(--green)">1,248</div><div class="spstl">Total</div></div><div class="spstat"><div class="spstv" style="color:var(--gold)">347</div><div class="spstl">Active Today</div></div><div class="spstat"><div class="spstv" style="color:var(--info)">89</div><div class="spstl">Loyalty</div></div></div><button class="btn btn-p" style="margin-top:8px">Add Customer</button></div></div>
+  <!-- SUPPLIERS -->
+  <div id="suppliers" class="page-wrap page"><div class="spage"><div class="sp-ico">🚛</div><h2>Supplier Management</h2><p>Manage supplier relationships, track purchase orders and delivery schedules.</p><div class="sp-stats"><div class="spstat"><div class="spstv" style="color:var(--green)">24</div><div class="spstl">Suppliers</div></div><div class="spstat"><div class="spstv" style="color:var(--warn)">6</div><div class="spstl">Pending</div></div><div class="spstat"><div class="spstv" style="color:var(--gold)">3</div><div class="spstl">Overdue</div></div></div></div></div>
+  <!-- EXPENSES -->
+  <div id="expenses" class="page-wrap page"><div class="spage"><div class="sp-ico">💰</div><h2>Expense Tracking</h2><p>Monitor business expenses, petty cash, utilities and all operational costs.</p><div class="sp-stats"><div class="spstat"><div class="spstv" style="color:var(--danger)">KES 42K</div><div class="spstl">This Month</div></div><div class="spstat"><div class="spstv" style="color:var(--green)">KES 18K</div><div class="spstl">Petty Cash</div></div><div class="spstat"><div class="spstv" style="color:var(--gold)">15</div><div class="spstl">Records</div></div></div></div></div>
+
+  <!-- CASHIER HISTORY (cashier-only) -->
+  <div id="cashier-history" class="page-wrap page">
+    <div class="dash-top" style="margin-bottom:16px">
+      <div><div class="dash-greet">My Sales Today</div><div class="dash-date" id="ch-date"></div></div>
+      <button class="btn btn-s" onclick="exportCashierCSV()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        Export
+      </button>
+    </div>
+    <!-- Cashier KPIs -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px" id="ch-kpis">
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--green),var(--leaf))"></div>
+        <div class="kpi-ico" style="background:var(--pale)"><svg viewBox="0 0 24 24" fill="var(--green)"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
+        <div class="kpi-v" id="ch-revenue">KES 0</div><div class="kpi-l">My Revenue</div><div class="kpi-d up" id="ch-rev-sub"></div>
+      </div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--gold),var(--gold-l))"></div>
+        <div class="kpi-ico" style="background:var(--gold-p)"><svg viewBox="0 0 24 24" fill="var(--gold)"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+        <div class="kpi-v" id="ch-sales">0</div><div class="kpi-l">Sales Made</div><div class="kpi-d up" id="ch-sales-sub"></div>
+      </div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--info),#4f8df7)"></div>
+        <div class="kpi-ico" style="background:#e8f0fe"><svg viewBox="0 0 24 24" fill="var(--info)"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+        <div class="kpi-v" id="ch-items">0</div><div class="kpi-l">Items Sold</div><div class="kpi-d up" id="ch-items-sub"></div>
+      </div>
+    </div>
+    <!-- Sales history table -->
+    <div class="card">
+      <div class="card-h" style="padding-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+        <div><div class="card-title">My Sales History</div><div class="card-sub">All transactions processed today</div></div>
+        <span class="badge bg" id="ch-badge">0 sales</span>
+      </div>
+      <div class="card-b" style="padding-top:0">
+        <div id="ch-list" style="overflow-x:auto">
+          <div style="text-align:center;padding:40px;color:var(--g200)">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:40px;height:40px;opacity:.3;margin-bottom:8px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <p style="font-size:13px">No sales yet — process your first sale in POS!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KRA TOT REPORT PAGE -->
+  <div id="tot-report" class="page-wrap page">
+    <div class="dash-top" style="margin-bottom:16px">
+      <div>
+        <div class="dash-greet">KRA Turnover Tax Report</div>
+        <div class="dash-date">Pendo Packaging — Turnover Tax (TOT) 1.5% Monthly</div>
+      </div>
+      <div class="dash-acts">
+        <button class="btn btn-s" onclick="exportTOTCSV()">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><span>Export CSV</span>
+        </button>
+        <button class="btn btn-p" onclick="exportTOTPDF()">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg><span>Export PDF</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-b" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
+        <div class="ff" style="margin:0;flex:1;min-width:120px">
+          <label>Month</label>
+          <select id="tot-month" onchange="renderTOTReport()" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)">
+            <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+            <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+            <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+            <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+          </select>
+        </div>
+        <div class="ff" style="margin:0;flex:1;min-width:100px">
+          <label>Year</label>
+          <select id="tot-year" onchange="renderTOTReport()" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)">
+            <option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option>
+          </select>
+        </div>
+        <div class="ff" style="margin:0;flex:1;min-width:120px">
+          <label>Branch</label>
+          <select id="tot-branch" onchange="renderTOTReport()" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)">
+            <option value="all">All Branches</option>
+            <option value="main">Main — Chuka Town</option>
+            <option value="branch2">Branch 2</option>
+          </select>
+        </div>
+        <div class="ff" style="margin:0;flex:1;min-width:120px">
+          <label>Cashier</label>
+          <select id="tot-cashier" onchange="renderTOTReport()" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)">
+            <option value="all">All Cashiers</option>
+            <option value="faith">Faith Mutua</option>
+            <option value="james">James Kariuki</option>
+            <option value="alice">Alice Wanjiku</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOT Summary Cards -->
+    <div class="kpi-grid" id="tot-kpi-grid" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--green),var(--leaf))"></div>
+        <div class="kpi-ico" style="background:var(--pale)"><svg viewBox="0 0 24 24" fill="var(--green)"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
+        <div class="kpi-v" id="tot-gross-sales">KES 312,400</div><div class="kpi-l">Total Gross Sales</div><div class="kpi-d up">Month to date</div>
+      </div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--danger),#e74c3c)"></div>
+        <div class="kpi-ico" style="background:#fdecea"><svg viewBox="0 0 24 24" fill="var(--danger)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>
+        <div class="kpi-v" id="tot-tax-amount">KES 4,686.00</div><div class="kpi-l">Turnover Tax (1.5%)</div><div class="kpi-d dn">Payable to KRA</div>
+      </div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--info),#4f8df7)"></div>
+        <div class="kpi-ico" style="background:#e8f0fe"><svg viewBox="0 0 24 24" fill="var(--info)"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+        <div class="kpi-v" id="tot-net-revenue">KES 307,714.00</div><div class="kpi-l">Net Revenue After Tax</div><div class="kpi-d up">After TOT deduction</div>
+      </div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--gold),var(--gold-l))"></div>
+        <div class="kpi-ico" style="background:var(--gold-p)"><svg viewBox="0 0 24 24" fill="var(--gold)"><path d="M19 3H5c-1.1 0-2 .9-2 2v3H3v2h2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg></div>
+        <div class="kpi-v" id="tot-tx-count">5</div><div class="kpi-l">Transactions</div><div class="kpi-d up">Completed sales</div>
+      </div>
+    </div>
+
+    <!-- TOT Breakdown Table -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-h" style="padding-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+        <div><div class="card-title">Monthly Revenue Trends</div><div class="card-sub">Weekly breakdown with TOT</div></div>
+      </div>
+      <div class="card-b" style="padding-top:0">
+        <div class="rch"><canvas id="totTrendChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h" style="padding-bottom:16px"><div class="card-title">Turnover Tax Breakdown</div><div class="card-sub">Detailed sales log for KRA TOT filing</div></div>
+      <div class="card-b" style="padding-top:0;overflow-x:auto">
+        <table style="min-width:520px" id="tot-table">
+          <thead><tr>
+            <th>Week</th><th>Gross Sales</th><th>TOT (1.5%)</th><th>Net Revenue</th><th>Transactions</th>
+          </tr></thead>
+          <tbody id="tot-tbody"></tbody>
+          <tfoot id="tot-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settings" class="page-wrap page">
+    <div class="dash-top" style="margin-bottom:20px"><div><div class="dash-greet">Settings</div><div class="dash-date">System configuration</div></div></div>
+    <div class="settings-grid">
+      <div class="card"><div class="card-h"><div class="card-title">Business Info</div></div><div class="card-b">
+        <div class="ff"><label>Business Name</label><input value="Pendo Packaging Ltd"></div>
+        <div class="ff"><label>Location</label><input value="Chuka Town, Tharaka-Nithi"></div>
+        <div class="ff"><label>Phone</label><input value="+254 712 345 678"></div>
+        <div class="ff"><label>M-Pesa Till</label><input value="5678901"></div>
+        <button class="btn btn-p" style="width:100%;justify-content:center">Save Changes</button>
+      </div></div>
+      <div class="card"><div class="card-h"><div class="card-title">POS Settings</div></div><div class="card-b">
+        <div class="srow"><div><div class="slbl">Auto-print receipts</div><div class="sdesc">Print after every sale</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="srow"><div><div class="slbl">Sound on sale</div><div class="sdesc">Audio feedback</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="srow"><div><div class="slbl">Turnover Tax (TOT 1.5%)</div><div class="sdesc">KRA Turnover Tax — Monthly 1.5%</div></div><div class="toggle on" id="tot-toggle" onclick="toggleTOT(this)"></div></div>
+        <div class="srow"><div><div class="slbl">TOT Rate (%)</div><div class="sdesc">Current: 1.5% (KRA default)</div></div><input id="tot-rate-input" type="number" step="0.01" min="0" max="100" value="1.5" style="width:70px;padding:6px 10px;border:1.5px solid var(--g100);border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--green);background:var(--g50)" onchange="updateTOTRate(this.value)"></div>
+        <div class="srow"><div><div class="slbl">Low stock alerts</div><div class="sdesc">Alert at 15 units</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="srow"><div><div class="slbl">Offline mode</div><div class="sdesc">Work without internet</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      </div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Staff Accounts</div></div><div class="card-b">
+        <div class="cl">
+          <div class="cr"><div class="cav" style="background:var(--pale);color:var(--green)">FM</div><div class="cn">Faith Mutua <span class="badge bg" style="font-size:9px">Cashier</span></div><button class="btn btn-s" style="padding:6px 12px;font-size:11px;min-height:32px">Edit</button></div>
+          <div class="cr" style="margin-top:8px"><div class="cav" style="background:var(--gold-p);color:var(--gold)">JK</div><div class="cn">James Kariuki <span class="badge bb" style="font-size:9px">Manager</span></div><button class="btn btn-s" style="padding:6px 12px;font-size:11px;min-height:32px">Edit</button></div>
+          <div class="cr" style="margin-top:8px"><div class="cav" style="background:#e8f0fe;color:var(--info)">AW</div><div class="cn">Alice Wanjiku <span class="badge bo" style="font-size:9px">Cashier</span></div><button class="btn btn-s" style="padding:6px 12px;font-size:11px;min-height:32px">Edit</button></div>
+        </div>
+        <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:16px">Add Staff</button>
+      </div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Data & Backup</div></div><div class="card-b">
+        <div class="srow"><div><div class="slbl">Last backup</div><div class="sdesc">Today at 06:00 AM</div></div><span class="badge bg">✓ Synced</span></div>
+        <div class="srow"><div><div class="slbl">Cloud sync</div><div class="sdesc">Google Drive backup</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <button class="btn btn-s" style="width:100%;justify-content:center;margin-top:8px">Export All Data</button>
+        <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:8px">Backup Now</button>
+      </div></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- BOTTOM NAV -->
+<nav class="bot-nav">
+  <div class="bot-nav-inner">
+    <div class="bn-i active" id="bn-dashboard" onclick="go('dashboard',document.querySelector('[data-page=dashboard]'));setBN('dashboard')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span>Home</span></div>
+    <div class="bn-i" id="bn-pos" onclick="go('pos',document.querySelector('[data-page=pos]'));setBN('pos')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg><span>POS</span><div class="bn-pip"></div></div>
+    <div class="bn-i" id="bn-inventory" onclick="go('inventory',document.querySelector('[data-page=inventory]'));setBN('inventory')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span>Inventory</span></div>
+    <div class="bn-i" id="bn-reports" onclick="go('reports',document.querySelector('[data-page=reports]'));setBN('reports')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg><span>Reports</span></div>
+    <div class="bn-i" id="bn-settings" onclick="go('settings',document.querySelector('[data-page=settings]'));setBN('settings')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><span>Settings</span></div>
+    <div class="bn-i" id="bn-cashier-history" style="display:none" onclick="go('cashier-history',null);setBN('cashier-history')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span>My Sales</span></div>
+  </div>
+</nav>
+</div><!-- /app -->
+
+<!-- MOBILE CART DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-ov" onclick="closeDrawer()"></div>
+  <div class="drawer-panel">
+    <div class="dh"></div>
+    <div class="cart-hd"><div class="cart-hdl"><h3>Current Sale</h3><p id="d-count">0 items</p></div><button class="cart-clr" onclick="clearCart()">Clear</button></div>
+    <div class="cart-bd" id="d-bd" style="flex:1;overflow-y:auto;padding:10px 16px"></div>
+    <div class="cart-ft">
+      <div class="tot-row"><span class="tot-l">Subtotal</span><span class="tot-v" id="d-sub">KES 0</span></div>
+      <div class="tot-row tot-grand"><span class="tot-l">Total</span><span class="tot-v" id="d-tot">KES 0</span></div>
+      <div class="pay-chips">
+        <div class="pchip on" id="dpc-cash" onclick="selPay('cash')">💵 Cash</div>
+        <div class="pchip" id="dpc-mpesa" onclick="selPay('mpesa')">📱 M-Pesa</div>
+        <div class="pchip" id="dpc-card" onclick="selPay('card')">💳 Card</div>
+      </div>
+      <button class="chk-btn" id="d-chk" onclick="checkout()" disabled>
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Complete Sale
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIPT -->
+<div id="overlay" class="overlay" onclick="closeRct(event)">
+  <div class="rp">
+    <div class="rpt"><div class="rpl">🌿 Pendo Packaging</div><div class="rpa">Chuka Town, Tharaka-Nithi County<br>+254 712 345 678 · M-Pesa: 5678901</div></div>
+    <div class="rpb">
+      <div class="rpmeta">
+        <div class="rpmeta-i"><div class="rpml">Receipt</div><div class="rpmv" style="font-size:10px;font-family:monospace">#REC-0042</div></div>
+        <div class="rpmeta-i"><div class="rpml">Date</div><div class="rpmv" id="r-date" style="font-size:10px"></div></div>
+        <div class="rpmeta-i"><div class="rpml">Cashier</div><div class="rpmv" style="font-size:10px">Faith M.</div></div>
+        <div class="rpmeta-i"><div class="rpml">Pay</div><div class="rpmv" id="r-pay" style="font-size:10px">Cash</div></div>
+      </div>
+      <div id="r-items"></div>
+      <div class="rptots">
+        <div class="rptr"><span>Subtotal</span><span id="r-sub">KES 0</span></div>
+      </div>
+      <div class="rpgrand"><div class="rpgl">TOTAL PAID</div><div class="rpgv" id="r-tot">KES 0</div></div>
+      <div class="rpfoot" style="margin-top:16px">
+        <div class="rpbc" id="rct-bc"></div>
+        <div class="rpcode">PEND-0042-CHK</div>
+        <p style="margin-top:10px">Thank you for shopping at Pendo Packaging!</p>
+        <p>Your Packaging Partner — Chuka, Kenya</p>
+      </div>
+    </div>
+    <div class="rpacts">
+      <button class="rpbtn rpprint" onclick="openPrintPanel()">🖨️ Print</button>
+      <button class="rpbtn" style="background:var(--gold);color:#fff;flex:1" onclick="saveReceiptPDF()">⬇ PDF</button>
+      <button class="rpbtn rpnew" onclick="newSale()">New Sale</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ THERMAL PRINT PANEL ══════════════════════════════════ -->
+<div id="thermal-panel" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,26,18,.7);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closePrintPanel()">
+  <div style="background:var(--white);border-radius:20px 20px 0 0;padding:0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.25)">
+    <!-- Handle -->
+    <div style="display:flex;justify-content:center;padding:12px 0 4px"><div style="width:40px;height:4px;border-radius:2px;background:var(--g100)"></div></div>
+    <!-- Header -->
+    <div style="padding:12px 20px 16px;border-bottom:1px solid var(--g100)">
+      <div style="font-size:17px;font-weight:800;color:var(--ink)">🖨️ Print Receipt</div>
+      <div style="font-size:12px;color:var(--g400);margin-top:2px">P58E Thermal Printer — 58mm roll</div>
+    </div>
+
+    <!-- BT Status Bar -->
+    <div id="bt-status-bar" style="margin:14px 16px 0;padding:10px 14px;border-radius:10px;background:var(--g50);border:1.5px solid var(--g100);display:flex;align-items:center;gap:10px">
+      <div id="bt-dot" style="width:10px;height:10px;border-radius:50%;background:var(--g200);flex-shrink:0;transition:.3s"></div>
+      <div>
+        <div id="bt-status-text" style="font-size:13px;font-weight:700;color:var(--ink)">Not connected</div>
+        <div id="bt-status-sub" style="font-size:11px;color:var(--g400)">Tap "Connect Printer" to pair your P58E</div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+
+      <!-- Connect / Print button -->
+      <button id="bt-main-btn" onclick="thermalMainAction()" style="width:100%;padding:16px;border-radius:12px;background:var(--green);color:#fff;border:none;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px">
+        <span>📡</span><span id="bt-main-label">Connect Printer</span>
+      </button>
+
+      <!-- Download TXT fallback -->
+      <button onclick="downloadReceiptTxt()" style="width:100%;padding:14px;border-radius:12px;background:var(--pale);color:var(--green);border:1.5px solid var(--mint);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <span>📥</span> Download as .txt (use with PrintHand)
+      </button>
+
+      <!-- Browser print -->
+      <button onclick="browserPrint()" style="width:100%;padding:14px;border-radius:12px;background:var(--g50);color:var(--g600);border:1.5px solid var(--g100);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <span>🖥️</span> Print via Browser (WiFi/USB printer)
+      </button>
+
+      <!-- PrintHand link -->
+      <a href="https://play.google.com/store/apps/details?id=com.dynamixsoftware.printershare" target="_blank" rel="noopener" style="width:100%;padding:12px;border-radius:12px;background:#fff;color:var(--g400);border:1.5px dashed var(--g100);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none">
+        📲 Get PrintHand app on Google Play
+      </a>
+    </div>
+
+    <!-- Receipt preview -->
+    <div style="margin:0 16px 16px;border-radius:12px;background:#fafafa;border:1px solid var(--g100);overflow:hidden">
+      <div style="padding:10px 14px;background:var(--g50);border-bottom:1px solid var(--g100);font-size:11px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px">Receipt Preview (58mm)</div>
+      <pre id="thermal-preview" style="font-family:'Courier New',monospace;font-size:11px;line-height:1.55;padding:14px;white-space:pre-wrap;color:var(--ink);margin:0;overflow-x:auto"></pre>
+    </div>
+
+    <!-- Bottom safe area -->
+    <div style="height:env(safe-area-inset-bottom,16px)"></div>
+  </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="toast"></div>
+
+<!-- PDF Loading overlay -->
+<div id="pdfLoader" class="pdf-loader">
+  <div class="pdf-loader-box">
+    <div class="pdf-loader-icon">📄</div>
+    <div class="pdf-loader-title">Generating PDF</div>
+    <div class="pdf-loader-sub">Please wait a moment…</div>
+    <div class="pdf-spinner"></div>
+  </div>
+</div>
+
+<!-- Hidden print area -->
+<div id="print-area" style="display:none"></div>
+
+<script>
+const PRODS=[
+  {id:1,n:'Non-Woven Bag (S)',s:'NWB-S-001',c:'Bags',e:'🛍️',r:150,w:80,q:45},
+  {id:2,n:'Non-Woven Bag (M)',s:'NWB-M-002',c:'Bags',e:'🛍️',r:220,w:130,q:0},
+  {id:3,n:'Non-Woven Bag (L)',s:'NWB-L-003',c:'Bags',e:'🛍️',r:320,w:190,q:32},
+  {id:4,n:'Paper Cup 8oz',s:'CUP-8-004',c:'Cups',e:'☕',r:8,w:4,q:500},
+  {id:5,n:'Paper Cup 12oz',s:'CUP-12-005',c:'Cups',e:'🥤',r:12,w:7,q:8},
+  {id:6,n:'Paper Cup 16oz',s:'CUP-16-006',c:'Cups',e:'🧋',r:16,w:9,q:200},
+  {id:7,n:'Zipper Pouch Clear',s:'ZIP-C-007',c:'Pouches',e:'📦',r:45,w:22,q:5},
+  {id:8,n:'Zipper Pouch Kraft',s:'ZIP-K-008',c:'Pouches',e:'📫',r:60,w:32,q:80},
+  {id:9,n:'Facial Tissue 200s',s:'FTI-200-009',c:'Tissue',e:'🧻',r:120,w:65,q:150},
+  {id:10,n:'Kitchen Towel Roll',s:'KTR-010',c:'Tissue',e:'🎭',r:85,w:45,q:90},
+  {id:11,n:'Baby Diaper S (30s)',s:'DPR-S-011',c:'Diapers',e:'👶',r:650,w:420,q:25},
+  {id:12,n:'Baby Diaper L (24s)',s:'DPR-L-012',c:'Diapers',e:'🍼',r:750,w:490,q:18},
+  {id:13,n:'Sanitary Pad 8s',s:'SAN-8-013',c:'Sanitary',e:'💊',r:80,w:45,q:12},
+  {id:14,n:'Sanitary Pad 16s',s:'SAN-16-014',c:'Sanitary',e:'🌸',r:145,w:85,q:40},
+  {id:15,n:'Stretch Cling Wrap',s:'CLW-015',c:'Pouches',e:'🥙',r:180,w:110,q:35},
+  {id:16,n:'Kraft Paper Roll',s:'KPR-016',c:'Bags',e:'📜',r:550,w:340,q:10},
+];
+let cart=[],posCat='All',payM='cash';
+
+// ── ROLE ACCESS CONTROL ─────────────────────────────────
+let currentRole = 'admin';
+
+const ROLE_ACCESS = {
+  admin:   ['dashboard','pos','inventory','reports','tot-report','customers','suppliers','expenses','settings'],
+  super:   ['dashboard','pos','inventory','reports','tot-report','customers','suppliers','expenses','settings'],
+  cashier: ['pos','cashier-history'],
+};
+
+// Sidebar nav pages hidden for cashier
+const CASHIER_HIDDEN = ['dashboard','inventory','reports','tot-report','customers','suppliers','expenses','settings'];
+
+function doLogin(){
+  const r = document.getElementById('lr').value;
+  currentRole = r;
+
+  // User info
+  const names = {admin:'Admin Manager', cashier:'Cashier Staff', super:'Super Admin'};
+  const initials = {admin:'AM', cashier:'CS', super:'SA'};
+  const roles = {admin:'Administrator', cashier:'Cashier', super:'Super Admin'};
+  document.getElementById('uname').textContent = names[r];
+  document.getElementById('urole').textContent = roles[r];
+  document.getElementById('av').textContent = initials[r];
+
+  // Show app
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  // Apply restrictions
+  applyRoleUI(r);
+
+  // Initialise data
+  setGreet(r); setDate(); renderProds(); renderInv();
+
+  if(r === 'cashier'){
+    // Go straight to POS — cashier never sees dashboard
+    goPage('pos');
+    // Hide hamburger — cashier has no sidebar to open
+    const ham = document.querySelector('.ham');
+    if(ham) ham.style.display = 'none';
+  } else {
+    const ham = document.querySelector('.ham');
+    if(ham) ham.style.display = '';
+    setTimeout(()=>{ initDash(); initRep(); }, 100);
+  }
+}
+
+function applyRoleUI(role){
+  const isCashier = role === 'cashier';
+
+  // ── Sidebar nav items ──
+  CASHIER_HIDDEN.forEach(page => {
+    const ni = document.querySelector(`.ni[data-page="${page}"]`);
+    if(ni) ni.style.display = isCashier ? 'none' : '';
+  });
+
+  // ── Sidebar section headings ──
+  document.querySelectorAll('.sb-sec').forEach(s => s.style.display = isCashier ? 'none' : '');
+
+  // ── Sidebar itself ──
+  document.getElementById('sidebar').style.display = isCashier ? 'none' : '';
+
+  // ── Bottom nav: hide all admin tabs for cashier ──
+  ['bn-dashboard','bn-inventory','bn-reports','bn-settings'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = isCashier ? 'none' : '';
+  });
+
+  // ── Bottom nav: show "My Sales" only for cashier ──
+  const bnHist = document.getElementById('bn-cashier-history');
+  if(bnHist) bnHist.style.display = isCashier ? 'flex' : 'none';
+
+  // ── Inventory action buttons (edit / delete / add) ──
+  // Re-run after renderInv() too — see renderInv()
+  document.querySelectorAll('.ab.edit, .ab.del, .inv-bar .btn, .icbtn').forEach(el => {
+    el.style.display = isCashier ? 'none' : '';
+  });
+}
+
+function logout(){
+  currentRole = 'admin';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login').style.display = 'flex';
+  // Reset sidebar + hamburger visibility
+  document.getElementById('sidebar').style.display = '';
+  const ham = document.querySelector('.ham');
+  if(ham) ham.style.display = '';
+}
+
+function setRole(r, el){
+  document.getElementById('lr').value = r;
+  document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function setGreet(role){
+  const h = new Date().getHours();
+  const time = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  const name = role === 'cashier' ? 'Cashier' : 'Manager';
+  const el = document.getElementById('greeting');
+  if(el) el.textContent = `Good ${time}, ${name} 👋`;
+}
+
+function setDate(){
+  const d = document.getElementById('dash-date');
+  if(d) d.textContent = new Date().toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+// ── NAVIGATION ─────────────────────────────────────────
+const pgNames = {
+  dashboard:'Dashboard', pos:'Point of Sale', inventory:'Inventory',
+  reports:'Reports', 'tot-report':'KRA Turnover Tax Report', customers:'Customers', suppliers:'Suppliers',
+  expenses:'Expenses', settings:'Settings', 'cashier-history':'My Sales'
+};
+
+// Internal page switch (no role guard — called from doLogin)
+function goPage(page){
+  document.querySelectorAll('.page, .page-wrap').forEach(p => p.classList.remove('show'));
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  const pageId = page === 'pos' ? 'pos-page' : page;
+  const t = document.getElementById(pageId);
+  if(t) t.classList.add('show');
+  const ni = document.querySelector(`.ni[data-page="${page}"]`);
+  if(ni) ni.classList.add('active');
+  const titleEl = document.getElementById('page-title');
+  if(titleEl) titleEl.textContent = pgNames[page] || page;
+  setBN(page);
+  if(page === 'inventory') setTimeout(renderInv, 50);
+  if(page === 'cashier-history') renderCashierHistory();
+  if(page === 'tot-report') renderTOTReport();
+  if(window.innerWidth <= 640) closeSB();
+}
+
+// Public nav — enforces role guard
+function go(page, el){
+  const allowed = ROLE_ACCESS[currentRole] || ROLE_ACCESS.admin;
+  if(!allowed.includes(page)){
+    showToast('⛔ Access restricted for your role', 'error');
+    return;
+  }
+  goPage(page);
+  // Sync sidebar active state from external caller
+  if(el){ document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active')); el.classList.add('active'); }
+}
+
+function setBN(p){
+  document.querySelectorAll('.bn-i').forEach(b => b.classList.remove('active'));
+  const b = document.getElementById('bn-' + p);
+  if(b) b.classList.add('active');
+}
+function toggleSB(){
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('open');
+  const ov = document.getElementById('sbOv');
+  ov.style.cssText = sb.classList.contains('open')
+    ? 'display:block;opacity:1;pointer-events:all'
+    : 'display:none;opacity:0;pointer-events:none';
+}
+function closeSB(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sbOv').style.cssText = 'display:none;opacity:0;pointer-events:none';
+}
+
+// MOBILE DETECT
+function checkMobile(){
+  const lo=document.querySelector('.form-brand-mark');
+  const art=document.querySelector('.login-art');
+  if(window.innerWidth<=640){if(lo)lo.style.display='flex';if(art)art.style.display='none';}
+  else{if(lo)lo.style.display='none';if(art)art.style.display='flex';}
+}
+window.addEventListener('resize',checkMobile);checkMobile();
+
+// POS
+function renderProds(){
+  const g=document.getElementById('pgrid');
+  const q=document.getElementById('pos-search').value.toLowerCase();
+  const f=PRODS.filter(p=>{const ms=!q||p.n.toLowerCase().includes(q)||p.s.toLowerCase().includes(q);const mc=posCat==='All'||p.c===posCat;return ms&&mc;});
+  g.innerHTML=f.map(p=>{
+    const sc=p.q===0?'oos':p.q<15?'low':'ok';
+    const sl=p.q===0?'Out of stock':p.q<15?`${p.q} left`:`${p.q} in stock`;
+    return `<div class="pcard${p.q===0?' oos':''}" onclick="addToCart(${p.id})">
+      <div class="afl" id="f-${p.id}"></div>
+      <div class="pce">${p.e}</div><div class="pcn">${p.n}</div><div class="pcs">${p.s}</div>
+      <div class="pcb"><div class="pcp">KES ${p.r}</div><div class="pcst ${sc}">${sl}</div></div>
+    </div>`;
+  }).join('')||'<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--g200);font-size:13px">No products found</div>';
+}
+function setCat(c,el){posCat=c;document.querySelectorAll('.cpill').forEach(p=>p.classList.remove('on'));el.classList.add('on');renderProds();}
+function filterProds(){renderProds();}
+function addToCart(id){
+  const p=PRODS.find(x=>x.id===id);if(!p||p.q===0)return;
+  const f=document.getElementById('f-'+id);if(f){f.style.opacity='1';setTimeout(()=>f.style.opacity='0',350);}
+  const ex=cart.find(x=>x.id===id);
+  if(ex)ex.qty=Math.min(ex.qty+1,p.q);else cart.push({...p,qty:1});
+  renderCart();
+}
+function cartItemsHTML(){
+  if(!cart.length)return`<div class="cart-empty"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg><p>Cart is empty</p><small>Tap a product to add</small></div>`;
+  return cart.map(i=>`<div class="ci">
+    <div class="ci-e">${i.e}</div>
+    <div class="ci-inf"><div class="ci-n">${i.n}</div><div class="ci-p">KES ${i.r} each</div></div>
+    <div class="ci-q"><div class="qb" onclick="chQty(${i.id},-1)">−</div><div class="qn">${i.qty}</div><div class="qb" onclick="chQty(${i.id},1)">+</div></div>
+    <div class="ci-t">KES ${(i.r*i.qty).toLocaleString()}</div>
+    <div class="ci-rm" onclick="rmCart(${i.id})">×</div>
+  </div>`).join('');
+}
+function renderCart(){
+  const html=cartItemsHTML();
+  const bd=document.getElementById('cart-bd');if(bd)bd.innerHTML=html;
+  const dbd=document.getElementById('d-bd');if(dbd)dbd.innerHTML=html;
+  const has=cart.length>0;
+  ['chk-btn','d-chk'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=!has;});
+  const cnt=cart.length;
+  const cc=document.getElementById('cart-count');if(cc)cc.textContent=cnt+' item'+(cnt!==1?'s':'');
+  const dc=document.getElementById('d-count');if(dc)dc.textContent=cnt+' item'+(cnt!==1?'s':'');
+  const fc=document.getElementById('fabCnt');if(fc)fc.textContent=cnt;
+  updateTotals();
+}
+function chQty(id,d){const i=cart.find(x=>x.id===id);if(i){i.qty=Math.max(1,Math.min(i.qty+d,i.q));renderCart();}}
+function rmCart(id){cart=cart.filter(x=>x.id!==id);renderCart();}
+function clearCart(){cart=[];renderCart();closeDrawer();}
+function updateTotals(){
+  const sub=cart.reduce((s,i)=>s+i.r*i.qty,0);
+  const tot=sub; // TOT is calculated monthly in backend reports only
+  [['c-sub','d-sub'],['c-tot','d-tot']].forEach(([a,b],i)=>{
+    const v=['KES '+sub.toLocaleString(),'KES '+tot.toLocaleString()][i];
+    const ea=document.getElementById(a);const eb=document.getElementById(b);
+    if(ea)ea.textContent=v;if(eb)eb.textContent=v;
+  });
+}
+function selPay(m){
+  payM=m;
+  ['cash','mpesa','card'].forEach(k=>{
+    ['pc-'+k,'dpc-'+k].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('on',k===m);});
+  });
+}
+function openDrawer(){document.getElementById('drawer').classList.add('open');renderCart();}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');}
+// Cashier sales history (in-session)
+const cashierSales = [];
+let receiptCounter = 42;
+
+function checkout(){
+  if(!cart.length)return;closeDrawer();
+  const sub=cart.reduce((s,i)=>s+i.r*i.qty,0);
+  const tot=sub; // No VAT — TOT is monthly aggregate at 1.5%
+  const now=new Date();
+  const receiptNum='#REC-00'+receiptCounter;
+  receiptCounter++;
+  document.getElementById('r-date').textContent=now.toLocaleDateString('en-KE',{year:'numeric',month:'short',day:'numeric'});
+  document.getElementById('r-pay').textContent={cash:'Cash 💵',mpesa:'M-Pesa 📱',card:'Card 💳'}[payM];
+  document.getElementById('r-items').innerHTML=cart.map(i=>`<div class="rpi"><div><div class="rpin">${i.n}</div><div class="rpiq">× ${i.qty} @ KES ${i.r.toLocaleString()}</div></div><div class="rpit">KES ${(i.r*i.qty).toLocaleString()}</div></div>`).join('');
+  document.getElementById('r-sub').textContent='KES '+sub.toLocaleString();
+  document.getElementById('r-tot').textContent='KES '+tot.toLocaleString();
+  // Update cashier name on receipt
+  const cashierNames={admin:'Admin Manager',super:'Super Admin',cashier:'Cashier'};
+  const rCashierEl=document.querySelector('.rpmeta-i:nth-child(3) .rpmv');
+  if(rCashierEl)rCashierEl.textContent=cashierNames[currentRole]||'Staff';
+  // Update receipt number display
+  const rvEl=document.querySelector('.rpmv');if(rvEl)rvEl.textContent=receiptNum;
+  let bc='';for(let i=0;i<48;i++){const w=Math.random()>.65?3:1.5;const g=Math.random()>.75?3:1.5;bc+=`<div class="bcbar" style="width:${w}px"></div><div style="width:${g}px"></div>`;}
+  document.getElementById('rct-bc').innerHTML=bc;
+  document.getElementById('overlay').classList.add('show');
+  // Record in cashier history (store tot for TOT aggregation)
+  cashierSales.unshift({
+    num:receiptNum,
+    time:now.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}),
+    date:now,
+    items:cart.reduce((s,i)=>s+i.qty,0),
+    pay:{cash:'Cash 💵',mpesa:'M-Pesa 📱',card:'Card 💳'}[payM],
+    sub,tot,
+    lines:cart.map(i=>({n:i.n,qty:i.qty,r:i.r,t:i.r*i.qty}))
+  });
+  // Update dashboard TOT widget live
+  updateDashTOT();
+}
+function closeRct(e){if(e.target.id==='overlay')newSale();}
+function newSale(){document.getElementById('overlay').classList.remove('show');clearCart();}
+
+// ── CASHIER HISTORY ──────────────────────────────────────
+function renderCashierHistory(){
+  const cd=document.getElementById('ch-date');
+  if(cd)cd.textContent=new Date().toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const totalRev=cashierSales.reduce((s,x)=>s+x.tot,0);
+  const totalItems=cashierSales.reduce((s,x)=>s+x.items,0);
+  const el_rev=document.getElementById('ch-revenue');
+  const el_sales=document.getElementById('ch-sales');
+  const el_items=document.getElementById('ch-items');
+  const el_badge=document.getElementById('ch-badge');
+  if(el_rev)el_rev.textContent='KES '+totalRev.toLocaleString();
+  if(el_sales)el_sales.textContent=cashierSales.length;
+  if(el_items)el_items.textContent=totalItems;
+  if(el_badge)el_badge.textContent=cashierSales.length+' sale'+(cashierSales.length!==1?'s':'');
+  const sub_rev=document.getElementById('ch-rev-sub');
+  const sub_sales=document.getElementById('ch-sales-sub');
+  const sub_items=document.getElementById('ch-items-sub');
+  if(sub_rev)sub_rev.textContent=cashierSales.length?`Avg KES ${Math.round(totalRev/cashierSales.length).toLocaleString()} per sale`:'No sales yet';
+  if(sub_sales)sub_sales.textContent=cashierSales.length?`Last: ${cashierSales[0].time}`:'Start your first sale!';
+  if(sub_items)sub_items.textContent=cashierSales.length?`Across ${cashierSales.length} transaction${cashierSales.length!==1?'s':''}`:'—';
+  const list=document.getElementById('ch-list');
+  if(!list)return;
+  if(!cashierSales.length){
+    list.innerHTML=`<div style="text-align:center;padding:48px 20px;color:var(--g200)">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width:44px;height:44px;opacity:.3;display:block;margin:0 auto 12px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      <p style="font-size:14px;font-weight:600;margin-bottom:4px">No sales yet</p>
+      <p style="font-size:12px">Process your first sale in the POS screen!</p>
+    </div>`;
+    return;
+  }
+  list.innerHTML=`<table style="width:100%;border-collapse:collapse;min-width:480px">
+    <thead><tr>
+      <th style="text-align:left;font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;padding:10px 14px;border-bottom:1.5px solid var(--g100)">Receipt</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;padding:10px 14px;border-bottom:1.5px solid var(--g100)">Time</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;padding:10px 14px;border-bottom:1.5px solid var(--g100)">Items</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;padding:10px 14px;border-bottom:1.5px solid var(--g100)">Payment</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;padding:10px 14px;border-bottom:1.5px solid var(--g100)">Total</th>
+      <th style="text-align:left;font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;padding:10px 14px;border-bottom:1.5px solid var(--g100)">Action</th>
+    </tr></thead>
+    <tbody>${cashierSales.map((s,i)=>`<tr style="${i%2===1?'background:var(--g50)':''}">
+      <td style="padding:11px 14px;border-bottom:1px solid var(--g50);font-weight:700;font-size:11px;font-family:monospace;color:var(--green)">${s.num}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid var(--g50);font-size:12px;color:var(--g400)">${s.time}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid var(--g50)"><span class="badge bb">${s.items} item${s.items!==1?'s':''}</span></td>
+      <td style="padding:11px 14px;border-bottom:1px solid var(--g50);font-size:12px">${s.pay}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid var(--g50);font-weight:800;color:var(--green)">KES ${s.tot.toLocaleString()}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid var(--g50)">
+        <button onclick="reprintSale(${i})" style="font-size:11px;font-weight:700;padding:5px 10px;border-radius:6px;background:var(--pale);color:var(--green);border:1px solid var(--mint);cursor:pointer;min-height:32px">🖨 Reprint</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function reprintSale(idx){
+  const s=cashierSales[idx];if(!s)return;
+  document.getElementById('r-date').textContent=new Date().toLocaleDateString('en-KE',{year:'numeric',month:'short',day:'numeric'});
+  document.getElementById('r-pay').textContent=s.pay;
+  document.getElementById('r-items').innerHTML=s.lines.map(l=>`<div class="rpi"><div><div class="rpin">${l.n}</div><div class="rpiq">× ${l.qty} @ KES ${l.r.toLocaleString()}</div></div><div class="rpit">KES ${l.t.toLocaleString()}</div></div>`).join('');
+  document.getElementById('r-sub').textContent='KES '+s.sub.toLocaleString();
+  document.getElementById('r-tot').textContent='KES '+s.tot.toLocaleString();
+  const rvEl=document.querySelector('.rpmv');if(rvEl)rvEl.textContent=s.num;
+  // Show thermal print panel directly (no need to open overlay)
+  const txt=buildThermalReceipt(s);
+  document.getElementById('thermal-preview').textContent=txt;
+  const panel=document.getElementById('thermal-panel');
+  panel.style.display='flex';
+  updateBtUI();
+}
+
+function exportCashierCSV(){
+  if(!cashierSales.length){showToast('No sales to export yet','error');return;}
+  const rows=[['Receipt #','Time','Items','Payment','Amount (KES)','Total (KES)']];
+  cashierSales.forEach(s=>rows.push([s.num,s.time,s.items,s.pay,'KES '+s.sub,'KES '+s.tot]));
+  const totalGross=cashierSales.reduce((a,s)=>a+s.tot,0);
+  const totTax=(totalGross*0.015).toFixed(2);
+  rows.push([],[' TOTAL GROSS SALES','','','','','KES '+totalGross.toLocaleString()]);
+  rows.push([' TURNOVER TAX (1.5%)','','','','','KES '+Number(totTax).toLocaleString()]);
+  rows.push([' NET REVENUE','','','','','KES '+(totalGross-Number(totTax)).toLocaleString()]);
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download='My-Sales-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},200);
+  showToast('✅ Your sales exported','success');
+}
+
+// INVENTORY
+function renderInv(){
+  const tb=document.getElementById('inv-tbody');
+  const cards=document.getElementById('inv-cards');
+  if(tb){tb.innerHTML=PRODS.map(p=>{
+    const sc=p.q===0?'br':p.q<15?'bw':'bg';
+    const sl=p.q===0?'Out of stock':p.q<15?'Low stock':'In stock';
+    const snc=p.q<15?(p.q===0?'color:var(--danger)':'color:var(--warn)'):'';
+    return`<tr><td><div style="display:flex;align-items:center;gap:10px"><div class="pt">${p.e}</div><div class="tn">${p.n}</div></div></td><td style="font-family:monospace;font-size:10px;color:var(--g200)">${p.s}</td><td><span class="badge bb">${p.c}</span></td><td style="font-weight:700;color:var(--green)">KES ${p.r}</td><td style="color:var(--g600)">KES ${p.w}</td><td><span style="font-weight:700;${snc}">${p.q}</span></td><td><span class="badge ${sc}">${sl}</span></td><td><div style="display:flex;gap:5px"><div class="ab edit"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></div><div class="ab del"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"/></svg></div></div></td></tr>`;
+  }).join('');}
+  if(cards){cards.innerHTML=PRODS.map(p=>{
+    const sc=p.q===0?'br':p.q<15?'bw':'bg';
+    const sl=p.q===0?'Out of stock':p.q<15?'Low stock':'In stock';
+    return`<div class="icard"><div class="ict"><div class="ice">${p.e}</div><div class="icinfo"><div class="icn">${p.n}</div><div class="ics">${p.s}</div></div><span class="badge ${sc}">${sl}</span></div><div class="icm"><div><div class="icml">Retail</div><div class="icmv" style="color:var(--green)">KES ${p.r}</div></div><div><div class="icml">Cost</div><div class="icmv" style="color:var(--g600)">KES ${p.w}</div></div><div><div class="icml">Stock</div><div class="icmv" style="color:${p.q===0?'var(--danger)':p.q<15?'var(--warn)':'var(--ink)'}">${p.q}</div></div></div><div class="icact"><div class="icbtn ice-btn"><svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg>Edit</div><div class="icbtn icd-btn"><svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"/></svg>Delete</div></div></div>`;
+  }).join('');}
+}
+
+// CHARTS
+function initDash(){
+  const el=document.getElementById('dashBar');if(!el)return;
+  new Chart(el,{type:'bar',data:{labels:['W1','W2','W3','W4','W5','W6','W7','W8'],datasets:[{label:'Revenue',data:[280000,310000,295000,340000,320000,360000,335000,395000],backgroundColor:'#1d5733',borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#6f9080'}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10},color:'#6f9080',callback:v=>v>=1000?Math.round(v/1000)+'K':v}}}}});
+}
+function initRep(){
+  const C=(id,cfg)=>{const el=document.getElementById(id);if(el)new Chart(el,cfg);};
+  C('repBar',{type:'bar',data:{labels:['W1','W2','W3','W4','W5','W6','W7','W8'],datasets:[{label:'Revenue',data:[280000,310000,295000,340000,320000,360000,335000,395000],backgroundColor:'#1d5733',borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#6f9080'}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10},color:'#6f9080',callback:v=>v>=1000?Math.round(v/1000)+'K':v}}}}});
+  C('repDonut',{type:'doughnut',data:{labels:['M-Pesa','Cash','Card'],datasets:[{data:[62,28,10],backgroundColor:['#1d5733','#c8991f','#1a56db'],borderWidth:0,hoverOffset:4}]},options:{responsive:false,cutout:'68%',plugins:{legend:{display:false}}}});
+  C('repStack',{type:'bar',data:{labels:['Mon','Tue','Wed','Thu','Fri','Sat'],datasets:[{label:'Wholesale',data:[18000,22000,20000,28000,25000,32000],backgroundColor:'#1d5733',borderRadius:[4,4,0,0],borderSkipped:false},{label:'Retail',data:[14000,19000,18000,24000,22000,29000],backgroundColor:'#c8991f',borderRadius:[4,4,0,0],borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10},color:'#3a5a4a',boxWidth:10}}},scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#6f9080'}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10},color:'#6f9080',callback:v=>v>=1000?Math.round(v/1000)+'K':v}}}}});
+  C('repCat',{type:'bar',data:{labels:['Non-Woven','Pouches','Cups','Tissue','Diapers','Sanitary'],datasets:[{label:'KES',data:[87400,68200,56900,38700,32000,28500],backgroundColor:['#163d26','#1d5733','#2a7347','#38955d','#c8991f','#e2b83a'],borderRadius:5,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:9},color:'#6f9080',callback:v=>v>=1000?Math.round(v/1000)+'K':v}},y:{grid:{display:false},ticks:{font:{size:10},color:'#3a5a4a'}}}}});
+}
+
+// DARK MODE
+function toggleDark(){
+  const html=document.documentElement;
+  const cur=html.getAttribute('data-theme');
+  const isDark=cur==='dark'||(cur===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  const next=isDark?'light':'dark';
+  html.setAttribute('data-theme',next);
+  try{localStorage.setItem('pendo-theme',next);}catch(e){}
+}
+// Restore saved theme on load
+(function(){
+  try{const saved=localStorage.getItem('pendo-theme');if(saved)document.documentElement.setAttribute('data-theme',saved);}catch(e){}
+})();
+
+
+// ══ TOAST ══════════════════════════════════════════════
+function showToast(msg,type,duration){
+  duration=duration||3000;
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+(type||'');
+  void t.offsetWidth;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),duration);
+}
+
+// ══ PDF LOADER ═════════════════════════════════════════
+function showLoader(){document.getElementById('pdfLoader').classList.add('show');}
+function hideLoader(){document.getElementById('pdfLoader').classList.remove('show');}
+
+// ══ RECEIPT — PRINT ════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// THERMAL PRINTING — P58E Bluetooth (58mm, 32 chars/line)
+// ══════════════════════════════════════════════════════════
+
+const THERMAL = {
+  W: 32,           // chars per line on 58mm paper
+  device: null,
+  characteristic: null,
+  connected: false,
+  // ESC/POS commands
+  ESC_INIT:   [0x1B, 0x40],
+  ALIGN_CTR:  [0x1B, 0x61, 0x01],
+  ALIGN_L:    [0x1B, 0x61, 0x00],
+  BOLD_ON:    [0x1B, 0x45, 0x01],
+  BOLD_OFF:   [0x1B, 0x45, 0x00],
+  DBLW_ON:    [0x1D, 0x21, 0x11],
+  DBLW_OFF:   [0x1D, 0x21, 0x00],
+  FEED3:      [0x0A, 0x0A, 0x0A],
+  CUT:        [0x1D, 0x56, 0x42, 0x00],
+};
+
+// Sanitise text for PC437 charset (no fancy Unicode)
+function thermalSanitise(s){
+  return String(s)
+    .replace(/['']/g,"'").replace(/[""]/g,'"')
+    .replace(/–/g,'-').replace(/—/g,'--')
+    .replace(/…/g,'...').replace(/•/g,'*')
+    .replace(/[^\x20-\x7E]/g,'?');
+}
+
+// Centre a string within W columns
+function thermalCentre(s){
+  s=thermalSanitise(s).substring(0,THERMAL.W);
+  const pad=Math.max(0,Math.floor((THERMAL.W-s.length)/2));
+  return ' '.repeat(pad)+s;
+}
+
+// Key-value line: label left, value right, padded to W
+function thermalKV(label,value){
+  label=thermalSanitise(label); value=thermalSanitise(value);
+  const maxL=THERMAL.W-value.length-1;
+  if(label.length>maxL)label=label.substring(0,maxL);
+  const spaces=THERMAL.W-label.length-value.length;
+  return label+' '.repeat(Math.max(1,spaces))+value;
+}
+
+// Divider line
+function thermalDiv(ch='-'){return ch.repeat(THERMAL.W);}
+
+// Build the plain-text receipt for the P58E
+function buildThermalReceipt(sale){
+  const W=THERMAL.W;
+  const lines=[];
+  const push=s=>lines.push(s);
+
+  // Header
+  push(thermalCentre('PENDO PACKAGING'));
+  push(thermalCentre('Chuka Town, Tharaka-Nithi'));
+  push(thermalCentre('Tel: 0700-000-000'));
+  push(thermalDiv());
+  push(thermalCentre('RECEIPT'));
+  push(thermalDiv());
+
+  // Meta
+  push(thermalKV('Receipt:',sale.num||''));
+  push(thermalKV('Date:',sale.date||''));
+  push(thermalKV('Cashier:',sale.cashier||''));
+  push(thermalKV('Payment:',sale.pay||''));
+  push(thermalDiv());
+
+  // Items
+  (sale.lines||[]).forEach(l=>{
+    const name=thermalSanitise(l.n).substring(0,W);
+    push(name);
+    const qtyStr='  x'+l.qty+' @ KES '+l.r.toLocaleString();
+    const totStr='KES '+l.t.toLocaleString();
+    push(thermalKV(qtyStr,totStr));
+  });
+
+  push(thermalDiv());
+  push(thermalKV('SUBTOTAL','KES '+sale.sub.toLocaleString()));
+  push(thermalDiv('='));
+  push(thermalKV('TOTAL PAID','KES '+sale.tot.toLocaleString()));
+  push(thermalDiv('='));
+  push('');
+  push(thermalCentre('* TOT (1.5%) filed monthly *'));
+  push(thermalCentre('KRA Turnover Tax Regime'));
+  push(thermalDiv());
+  push(thermalCentre('Thank you for your business!'));
+  push(thermalCentre('Your Packaging Partner'));
+  push('');
+  push('');
+  push('');
+
+  return lines.join('\n');
+}
+
+// Collect current receipt data from DOM / sale store
+function getCurrentSaleData(){
+  const receiptEl=document.querySelector('.rpmv');
+  const num=receiptEl?receiptEl.textContent.trim():'';
+  const dateEl=document.getElementById('r-date');
+  const payEl=document.getElementById('r-pay');
+  const subEl=document.getElementById('r-sub');
+  const totEl=document.getElementById('r-tot');
+  const cashierEl=document.querySelector('.rpmeta-i:nth-child(3) .rpmv');
+  // Parse items from DOM
+  const itemEls=document.querySelectorAll('#r-items .rpi');
+  const lines=[];
+  itemEls.forEach(el=>{
+    const name=el.querySelector('.rpin')?el.querySelector('.rpin').textContent.trim():'';
+    const qtyLine=el.querySelector('.rpiq')?el.querySelector('.rpiq').textContent.trim():'';
+    const totTxt=el.querySelector('.rpit')?el.querySelector('.rpit').textContent.trim():'';
+    // parse "× 2 @ KES 150"
+    const qm=qtyLine.match(/×\s*(\d+)\s*@\s*KES\s*([\d,]+)/);
+    const tm=totTxt.match(/KES\s*([\d,]+)/);
+    lines.push({
+      n:name,
+      qty:qm?parseInt(qm[1]):1,
+      r:qm?parseInt(qm[2].replace(/,/g,'')):0,
+      t:tm?parseInt(tm[1].replace(/,/g,'')):0
+    });
+  });
+  const sub=subEl?parseInt(subEl.textContent.replace(/[^0-9]/g,'')):0;
+  const tot=totEl?parseInt(totEl.textContent.replace(/[^0-9]/g,'')):0;
+  return{
+    num,
+    date:dateEl?dateEl.textContent.trim():new Date().toLocaleDateString('en-KE'),
+    pay:payEl?payEl.textContent.trim():'',
+    cashier:cashierEl?cashierEl.textContent.trim():'Staff',
+    sub,tot,lines
+  };
+}
+
+// ── PANEL OPEN / CLOSE ────────────────────────────────────
+function openPrintPanel(){
+  const sale=getCurrentSaleData();
+  const txt=buildThermalReceipt(sale);
+  document.getElementById('thermal-preview').textContent=txt;
+  const panel=document.getElementById('thermal-panel');
+  panel.style.display='flex';
+  setTimeout(()=>panel.style.opacity='1',10);
+  updateBtUI();
+}
+function closePrintPanel(){
+  const panel=document.getElementById('thermal-panel');
+  panel.style.display='none';
+}
+
+// ── BT STATUS UI ──────────────────────────────────────────
+function updateBtUI(){
+  const dot=document.getElementById('bt-dot');
+  const txt=document.getElementById('bt-status-text');
+  const sub=document.getElementById('bt-status-sub');
+  const btn=document.getElementById('bt-main-btn');
+  const lbl=document.getElementById('bt-main-label');
+  const bar=document.getElementById('bt-status-bar');
+  if(THERMAL.connected && THERMAL.characteristic){
+    dot.style.background='#22c55e';
+    bar.style.borderColor='#bbf7d0';bar.style.background='#f0fdf4';
+    txt.textContent='Connected — '+( THERMAL.device?THERMAL.device.name:'P58E');
+    sub.textContent='Ready to print';
+    btn.style.background='#16a34a';
+    lbl.textContent='Print Now';
+    btn.querySelector('span').textContent='🖨️';
+  } else {
+    dot.style.background='var(--g200)';
+    bar.style.borderColor='var(--g100)';bar.style.background='var(--g50)';
+    txt.textContent='Not connected';
+    sub.textContent='Tap "Connect Printer" to pair your P58E';
+    btn.style.background='var(--green)';
+    lbl.textContent='Connect Printer';
+    btn.querySelector('span').textContent='📡';
+  }
+}
+
+// ── MAIN BUTTON ACTION ────────────────────────────────────
+async function thermalMainAction(){
+  if(THERMAL.connected && THERMAL.characteristic){
+    await sendThermalPrint();
+  } else {
+    await connectP58E();
+  }
+}
+
+// ── BLUETOOTH CONNECT ─────────────────────────────────────
+async function connectP58E(){
+  if(!navigator.bluetooth){
+    showToast('Web Bluetooth not supported on this browser. Use the .txt download option.','error');
+    return;
+  }
+  const lbl=document.getElementById('bt-main-label');
+  const btn=document.getElementById('bt-main-btn');
+  try{
+    lbl.textContent='Scanning…';btn.disabled=true;
+    // SPP-compatible UUIDs that work with most 58mm printers
+    const SPP='00001101-0000-1000-8000-00805f9b34fb';
+    const device=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:[
+        SPP,
+        '000018f0-0000-1000-8000-00805f9b34fb', // common generic printer
+        '0000ff00-0000-1000-8000-00805f9b34fb',
+        '0000ffe0-0000-1000-8000-00805f9b34fb',
+      ]
+    });
+    lbl.textContent='Connecting…';
+    const server=await device.gatt.connect();
+    // Try known BLE printer service UUIDs in order
+    const serviceUUIDs=[
+      '000018f0-0000-1000-8000-00805f9b34fb',
+      '0000ff00-0000-1000-8000-00805f9b34fb',
+      '0000ffe0-0000-1000-8000-00805f9b34fb',
+      SPP
+    ];
+    let service=null, characteristic=null;
+    for(const uuid of serviceUUIDs){
+      try{
+        service=await server.getPrimaryService(uuid);
+        if(service)break;
+      }catch(e){}
+    }
+    if(!service){
+      // Last resort — get any available service
+      const svcs=await server.getPrimaryServices();
+      if(svcs.length)service=svcs[0];
+    }
+    if(!service)throw new Error('No printable service found on this device');
+    const chars=await service.getCharacteristics();
+    // Pick writable characteristic
+    for(const c of chars){
+      if(c.properties.write||c.properties.writeWithoutResponse){
+        characteristic=c;break;
+      }
+    }
+    if(!characteristic)throw new Error('No writable characteristic found');
+    THERMAL.device=device;
+    THERMAL.characteristic=characteristic;
+    THERMAL.connected=true;
+    device.addEventListener('gattserverdisconnected',()=>{
+      THERMAL.connected=false;THERMAL.characteristic=null;THERMAL.device=null;
+      showToast('Printer disconnected','error');
+      updateBtUI();
+    });
+    showToast('Printer connected: '+device.name,'success');
+    updateBtUI();
+  }catch(err){
+    THERMAL.connected=false;
+    if(err.name==='NotFoundError'||err.message.includes('cancelled')){
+      showToast('Pairing cancelled','error');
+    } else if(err.message.includes('No printable')||err.message.includes('No writable')){
+      showToast('P58E paired but Classic BT not supported by browser. Use .txt download + PrintHand app.','error');
+    } else {
+      showToast('Could not connect: '+err.message,'error');
+    }
+    lbl.textContent='Connect Printer';btn.disabled=false;
+    updateBtUI();
+  }
+  btn.disabled=false;
+}
+
+// ── SEND TO PRINTER ───────────────────────────────────────
+async function sendThermalPrint(){
+  const sale=getCurrentSaleData();
+  const txt=buildThermalReceipt(sale);
+  try{
+    const enc=new TextEncoder();
+    // ESC/POS init
+    const init=new Uint8Array(THERMAL.ESC_INIT);
+    await writeChunk(THERMAL.characteristic,init);
+    // Send text in 128-byte chunks (BLE MTU safe)
+    const bytes=enc.encode(txt+'\n');
+    const CHUNK=128;
+    for(let i=0;i<bytes.length;i+=CHUNK){
+      await writeChunk(THERMAL.characteristic,bytes.slice(i,i+CHUNK));
+      await delay(30);
+    }
+    // Feed and cut
+    const tail=new Uint8Array([...THERMAL.FEED3,...THERMAL.CUT]);
+    await writeChunk(THERMAL.characteristic,tail);
+    showToast('Receipt sent to P58E ✓','success');
+    setTimeout(()=>closePrintPanel(),1200);
+  }catch(err){
+    showToast('Print failed: '+err.message,'error');
+    THERMAL.connected=false;THERMAL.characteristic=null;
+    updateBtUI();
+  }
+}
+
+async function writeChunk(char,data){
+  if(char.properties.writeWithoutResponse){
+    await char.writeValueWithoutResponse(data);
+  } else {
+    await char.writeValue(data);
+  }
+}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ── DOWNLOAD .TXT FALLBACK ────────────────────────────────
+function downloadReceiptTxt(){
+  const sale=getCurrentSaleData();
+  const txt=buildThermalReceipt(sale);
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Pendo-'+( sale.num||'receipt').replace(/[^a-zA-Z0-9-]/g,'')+'.txt';
+  a.click();
+  showToast('Receipt downloaded — open with PrintHand to print','success');
+}
+
+// ── BROWSER PRINT ─────────────────────────────────────────
+function browserPrint(){
+  const pa=document.getElementById('print-area');
+  const rp=document.querySelector('.rp');
+  if(!rp)return;
+  closePrintPanel();
+  pa.innerHTML='';pa.className='receipt-print';
+  const clone=rp.cloneNode(true);
+  const acts=clone.querySelector('.rpacts');
+  if(acts)acts.style.display='none';
+  pa.appendChild(clone);pa.style.display='block';
+  window.print();
+  setTimeout(()=>{pa.style.display='none';pa.innerHTML='';},1000);
+}
+
+// Legacy alias (used by reprintSale path — now opens panel)
+function printReceipt(){ openPrintPanel(); }
+
+// ══ RECEIPT — SAVE AS PDF ══════════════════════════════
+async function saveReceiptPDF(){
+  if(typeof jspdf==='undefined'){
+    showToast('PDF library not ready, try again…','error');return;
+  }
+  showLoader();
+  try{
+    const {jsPDF}=jspdf;
+
+    // ── Collect live receipt data from the DOM ──
+    const receiptEl  = document.querySelector('.rpmv');
+    const receiptNum = receiptEl ? receiptEl.textContent.trim() : 'REC-???';
+    const dateEl     = document.getElementById('r-date');
+    const payEl      = document.getElementById('r-pay');
+    const subEl      = document.getElementById('r-sub');
+    const totEl      = document.getElementById('r-tot');
+    const itemsEl    = document.getElementById('r-items');
+    const cashierEl  = document.querySelector('.rpmeta-i:nth-child(3) .rpmv');
+
+    const rDate   = dateEl   ? dateEl.textContent.trim()   : new Date().toLocaleDateString('en-KE');
+    const rPay    = payEl    ? payEl.textContent.trim()     : 'Cash';
+    const rSub    = subEl    ? subEl.textContent.trim()     : 'KES 0';
+    const rTot    = totEl    ? totEl.textContent.trim()     : 'KES 0';
+    const rCash   = cashierEl? cashierEl.textContent.trim() : 'Staff';
+
+    // Parse line items from DOM
+    const lineItems = [];
+    if(itemsEl){
+      itemsEl.querySelectorAll('.rpi').forEach(row=>{
+        const name = row.querySelector('.rpin')?.textContent.trim() || '';
+        const qty  = row.querySelector('.rpiq')?.textContent.trim() || '';
+        const amt  = row.querySelector('.rpit')?.textContent.trim() || '';
+        if(name) lineItems.push({name, qty, amt});
+      });
+    }
+
+    // ── Build 80mm-wide receipt PDF ──
+    const W = 80, m = 5;
+    const cGreen=[29,87,51], cGold=[200,153,31], cInk=[20,34,25], cGray=[120,140,130];
+
+    // Calculate height dynamically
+    const lineH = 6.5;
+    const headerH = 32;
+    const metaH   = 22;
+    const itemsH  = Math.max(lineItems.length, 1) * lineH + 6;
+    const totalsH = 18;
+    const footerH = 28;
+    const totalH  = headerH + metaH + itemsH + totalsH + footerH;
+
+    const pdf = new jsPDF({unit:'mm', format:[W, totalH], orientation:'portrait'});
+
+    let y = 0;
+
+    // ── Header (green band) ──
+    pdf.setFillColor(...cGreen);
+    pdf.rect(0, 0, W, headerH, 'F');
+
+    // Brand name
+    pdf.setTextColor(255,255,255);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(14);
+    pdf.text('PENDO PACKAGING', W/2, 10, {align:'center'});
+
+    // Gold accent line
+    pdf.setFillColor(...cGold);
+    pdf.rect(0, 13, W, 1, 'F');
+
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(7);
+    pdf.setTextColor(220,240,228);
+    pdf.text('Chuka Town, Tharaka-Nithi County', W/2, 18, {align:'center'});
+    pdf.text('+254 712 345 678  ·  M-Pesa: 5678901', W/2, 23, {align:'center'});
+
+    // Receipt title pill
+    pdf.setFillColor(255,255,255);
+    pdf.roundedRect(m+4, 27, W-m*2-8, 7, 2, 2, 'F');
+    pdf.setTextColor(...cGreen);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(8);
+    pdf.text('SALES RECEIPT', W/2, 32, {align:'center'});
+
+    y = headerH + 6;
+
+    // ── Meta info ──
+    pdf.setTextColor(...cGray);
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(7);
+
+    const metaRows = [
+      ['Receipt #:', receiptNum],
+      ['Date:',      rDate],
+      ['Cashier:',   rCash],
+      ['Payment:',   rPay],
+    ];
+    metaRows.forEach(([label, val])=>{
+      pdf.setFont('helvetica','normal'); pdf.setTextColor(...cGray);
+      pdf.text(label, m, y);
+      pdf.setFont('helvetica','bold'); pdf.setTextColor(...cInk);
+      pdf.text(val, W - m, y, {align:'right'});
+      y += 5;
+    });
+
+    // Divider
+    pdf.setDrawColor(200,220,210);
+    pdf.setLineWidth(0.3);
+    pdf.setLineDash([1,1]);
+    pdf.line(m, y, W-m, y);
+    pdf.setLineDash([]);
+    y += 5;
+
+    // ── Line items ──
+    if(lineItems.length){
+      lineItems.forEach(item=>{
+        // Item name (truncate if too long)
+        pdf.setFont('helvetica','bold');
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(...cInk);
+        const maxNameW = W - m*2 - 20;
+        let name = item.name;
+        while(pdf.getTextWidth(name) > maxNameW && name.length > 4) name = name.slice(0,-1);
+        if(name !== item.name) name += '…';
+        pdf.text(name, m, y);
+        pdf.setFont('helvetica','bold');
+        pdf.setTextColor(...cGreen);
+        pdf.text(item.amt, W-m, y, {align:'right'});
+        y += 4.5;
+        // Qty/unit price line
+        pdf.setFont('helvetica','normal');
+        pdf.setFontSize(6.5);
+        pdf.setTextColor(...cGray);
+        pdf.text(item.qty, m+2, y);
+        y += 5;
+      });
+    } else {
+      pdf.setFont('helvetica','italic');
+      pdf.setFontSize(7);
+      pdf.setTextColor(...cGray);
+      pdf.text('No items', W/2, y+3, {align:'center'});
+      y += 10;
+    }
+
+    // Divider
+    pdf.setDrawColor(200,220,210);
+    pdf.setLineDash([1,1]);
+    pdf.line(m, y, W-m, y);
+    pdf.setLineDash([]);
+    y += 5;
+
+    // ── Subtotal ──
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(...cGray);
+    pdf.text('Subtotal', m, y);
+    pdf.setTextColor(...cInk);
+    pdf.text(rSub, W-m, y, {align:'right'});
+    y += 5;
+
+    // ── TOT notice ──
+    pdf.setFontSize(6.5);
+    pdf.setTextColor(...cGray);
+    pdf.text('(Turnover Tax calculated monthly — KRA TOT)', W/2, y, {align:'center'});
+    y += 6;
+
+    // ── Grand total band ──
+    pdf.setFillColor(...cGreen);
+    pdf.roundedRect(m, y, W-m*2, 10, 2, 2, 'F');
+    pdf.setTextColor(255,255,255);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(9);
+    pdf.text('TOTAL PAID', m+3, y+7);
+    pdf.setFontSize(11);
+    pdf.text(rTot, W-m-3, y+7, {align:'right'});
+    y += 16;
+
+    // ── Barcode-style decoration ──
+    let bx = m+2;
+    for(let i=0;i<55;i++){
+      const bw = Math.random()>.6 ? 1.5 : 0.8;
+      const bg = Math.random()>.7 ? 1.2 : 0.5;
+      pdf.setFillColor(...cInk);
+      pdf.rect(bx, y, bw, 8, 'F');
+      bx += bw + bg;
+      if(bx > W-m-2) break;
+    }
+    pdf.setFontSize(7);
+    pdf.setFont('helvetica','normal');
+    pdf.setTextColor(...cGray);
+    pdf.text('PEND-'+receiptNum.replace('#','').replace('REC-','')+'CHK', W/2, y+11, {align:'center'});
+    y += 15;
+
+    // ── Footer ──
+    pdf.setFillColor(245,250,247);
+    pdf.rect(0, y, W, totalH-y, 'F');
+    pdf.setFillColor(...cGold);
+    pdf.rect(0, y, W, 1, 'F');
+    y += 6;
+    pdf.setTextColor(...cGreen);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(7.5);
+    pdf.text('Thank you for shopping at Pendo Packaging!', W/2, y, {align:'center'});
+    y += 5;
+    pdf.setFont('helvetica','normal');
+    pdf.setTextColor(...cGray);
+    pdf.setFontSize(6.5);
+    pdf.text('Your Packaging Partner — Chuka, Kenya', W/2, y, {align:'center'});
+
+    // Save
+    pdf.save('Pendo-'+receiptNum.replace(/[^a-zA-Z0-9-]/g,'')+'-'+new Date().toISOString().slice(0,10)+'.pdf');
+    hideLoader();
+    showToast('✅ Receipt saved as PDF','success');
+  }catch(e){
+    hideLoader();
+    showToast('❌ Could not generate PDF','error');
+    console.error(e);
+  }
+}
+
+// ══ REPORTS — EXPORT CSV ═══════════════════════════════
+function exportReportsCSV(){
+  const rows=[
+    ['Receipt #','Cashier','Items','Payment Method','Total (KES)','Time'],
+    ['#REC-0041','Faith Mutua','4','M-Pesa','2450','09:42 AM'],
+    ['#REC-0040','James Kariuki','2','Cash','780','09:18 AM'],
+    ['#REC-0039','Faith Mutua','8','M-Pesa','6200','08:55 AM'],
+    ['#REC-0038','Alice Wanjiku','12','Card','11400','08:31 AM'],
+    ['#REC-0037','James Kariuki','1','Cash','320','08:10 AM'],
+    [],
+    ['MONTHLY SUMMARY — KRA TURNOVER TAX (TOT)'],
+    ['Total Gross Revenue','KES 84,320'],
+    ['Turnover Tax (1.5%)','KES 1,264.80'],
+    ['Net Revenue After Tax','KES 83,055.20'],
+    ['Total Transactions','5'],
+    ['M-Pesa Share','62%'],
+    ['Cash Share','28%'],
+    ['Card Share','10%'],
+    ['Report Period','May 2026'],
+    ['Generated by','Pendo Packaging POS — KRA TOT Compliant'],
+  ];
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='Pendo-Sales-Report-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},200);
+  showToast('✅ CSV exported successfully','success');
+}
+
+// ══ REPORTS — EXPORT PDF ═══════════════════════════════
+async function exportReportsPDF(){
+  if(typeof jspdf==='undefined'){showToast('PDF library not ready, try again…','error');return;}
+  showLoader();
+  try{
+    const {jsPDF}=jspdf;
+    const pdf=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+    const pageW=210,pageH=297,m=14,cW=pageW-m*2;
+    const cGreen=[29,87,51],cGold=[212,160,23],cInk=[20,34,25],cGray=[111,144,128],cBg=[240,244,242];
+
+    // Header band
+    pdf.setFillColor(...cGreen);pdf.rect(0,0,pageW,30,'F');
+    pdf.setTextColor(255,255,255);
+    pdf.setFont('helvetica','bold');pdf.setFontSize(20);
+    pdf.text('PENDO PACKAGING',m,13);
+    pdf.setFont('helvetica','normal');pdf.setFontSize(9);
+    pdf.text('Sales & Revenue Report  |  Chuka Town, Tharaka-Nithi County',m,20);
+    pdf.text('+254 712 345 678  ·  M-Pesa Till: 5678901',m,26);
+    // Date badge
+    pdf.setFillColor(...cGold);pdf.roundedRect(pageW-m-55,8,55,14,3,3,'F');
+    pdf.setTextColor(...cInk);pdf.setFont('helvetica','bold');pdf.setFontSize(9);
+    pdf.text('May 2026  |  14 May',pageW-m-51,17);
+
+    let y=38;
+
+    // KPI cards
+    const kpis=[
+      {l:'Total Revenue',v:'KES 84,320',s:'+12.4%',c:cGreen},
+      {l:'Customers Today',v:'347',s:'+8.1%',c:cGold},
+      {l:'Items Sold',v:'1,284',s:'+5.3%',c:[26,86,219]},
+      {l:'TOT Payable (1.5%)',v:'KES 1,264.80',s:'Monthly',c:[192,57,43]},
+    ];
+    const kW=(cW-9)/4;
+    kpis.forEach((k,i)=>{
+      const x=m+i*(kW+3);
+      pdf.setFillColor(...cBg);pdf.roundedRect(x,y,kW,24,3,3,'F');
+      pdf.setFillColor(...k.c);pdf.rect(x,y,kW,2.5,'F');
+      pdf.setTextColor(...cInk);pdf.setFont('helvetica','bold');pdf.setFontSize(14);
+      pdf.text(k.v,x+3,y+14);
+      pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(...cGray);
+      pdf.text(k.l.toUpperCase(),x+3,y+19.5);
+      pdf.setFont('helvetica','bold');pdf.setFontSize(7);pdf.setTextColor(...k.c);
+      pdf.text(k.s,x+3,y+23.5);
+    });
+    y+=32;
+
+    // Section helper
+    function sectionTitle(title){
+      pdf.setFont('helvetica','bold');pdf.setFontSize(11);pdf.setTextColor(...cGreen);
+      pdf.text(title,m,y);
+      pdf.setDrawColor(...cGreen);pdf.setLineWidth(0.5);
+      pdf.line(m,y+1.5,m+pdf.getTextWidth(title),y+1.5);
+      y+=8;
+    }
+
+    // Payment Methods
+    sectionTitle('Payment Methods Breakdown');
+    const pays=[
+      {l:'M-Pesa',p:62,v:'KES 52,278',c:cGreen},
+      {l:'Cash',p:28,v:'KES 23,610',c:cGold},
+      {l:'Card',p:10,v:'KES 8,432',c:[26,86,219]},
+    ];
+    pays.forEach(p=>{
+      pdf.setFont('helvetica','normal');pdf.setFontSize(9.5);pdf.setTextColor(...cInk);
+      pdf.text(p.l,m,y+4);
+      pdf.setFillColor(221,230,225);pdf.roundedRect(m+22,y,cW-62,5,2,2,'F');
+      pdf.setFillColor(...p.c);pdf.roundedRect(m+22,y,(cW-62)*p.p/100,5,2,2,'F');
+      pdf.setFont('helvetica','bold');pdf.setFontSize(9);
+      pdf.text(p.p+'%',m+cW-36,y+4);
+      pdf.setFont('helvetica','normal');pdf.setTextColor(...cGray);
+      pdf.text(p.v,m+cW-20,y+4);
+      y+=10;
+    });
+    y+=4;
+
+    // Weekly Revenue
+    sectionTitle('Weekly Revenue Trend (Last 8 Weeks)');
+    const weeks=[
+      ['Week 1','280,000','142','1,972'],
+      ['Week 2','310,000','158','1,962'],
+      ['Week 3','295,000','151','1,954'],
+      ['Week 4','340,000','173','1,965'],
+      ['Week 5','320,000','163','1,963'],
+      ['Week 6','360,000','184','1,957'],
+      ['Week 7','335,000','171','1,959'],
+      ['Week 8','395,000','202','1,956'],
+    ];
+    const wCols=[40,45,35,60];const wHdrs=['Period','Revenue (KES)','Transactions','Avg/Transaction'];
+    pdf.setFillColor(...cGreen);pdf.rect(m,y,cW,7,'F');
+    pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);
+    let cx=m+3;wHdrs.forEach((h,i)=>{pdf.text(h,cx,y+4.8);cx+=wCols[i];});y+=7;
+    weeks.forEach((row,ri)=>{
+      if(ri%2===0){pdf.setFillColor(255,255,255);}else{pdf.setFillColor(245,247,245);}
+      pdf.rect(m,y,cW,6.5,'F');
+      pdf.setTextColor(...cInk);pdf.setFont('helvetica','normal');pdf.setFontSize(8.5);
+      cx=m+3;row.forEach((c,i)=>{pdf.text(c,cx,y+4.5);cx+=wCols[i];});y+=6.5;
+    });
+    // Total
+    pdf.setFillColor(...cGreen);pdf.rect(m,y,cW,7,'F');
+    pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);
+    cx=m+3;
+    ['TOTAL','2,635,000','1,344','KES 1,960'].forEach((c,i)=>{pdf.text(c,cx,y+4.8);cx+=wCols[i];});
+    y+=14;
+
+    // Category Revenue
+    sectionTitle('Revenue by Product Category');
+    const cats=[
+      {n:'Non-Woven Bags',r:'87,400',p:28,c:[22,61,38]},
+      {n:'Pouches & Wraps',r:'68,200',p:22,c:[29,87,51]},
+      {n:'Paper Cups',r:'56,900',p:18,c:[42,115,71]},
+      {n:'Tissue & Towels',r:'38,700',p:12,c:[56,149,93]},
+      {n:'Baby Diapers',r:'32,000',p:10,c:[212,160,23]},
+      {n:'Sanitary Products',r:'28,500',p:9,c:[226,184,58]},
+    ];
+    cats.forEach(c=>{
+      pdf.setFillColor(...c.c);pdf.rect(m,y,3,6.5,'F');
+      pdf.setFont('helvetica','normal');pdf.setFontSize(9);pdf.setTextColor(...cInk);
+      pdf.text(c.n,m+6,y+4.5);
+      pdf.text('KES '+c.r,m+80,y+4.5);
+      pdf.setFillColor(221,230,225);pdf.roundedRect(m+112,y+1,55,4,1.5,1.5,'F');
+      pdf.setFillColor(...c.c);pdf.roundedRect(m+112,y+1,55*c.p/100,4,1.5,1.5,'F');
+      pdf.setFont('helvetica','bold');pdf.setFontSize(8);
+      pdf.text(c.p+'%',m+170,y+4.5);
+      y+=9;
+    });
+    y+=6;
+
+    // Transaction log
+    if(y<pageH-60){
+      sectionTitle('Recent Transactions');
+      const txnHdrs=['Receipt #','Customer','Items','Payment','Amount','Time'];
+      const txnCols=[30,40,15,25,35,25];
+      const txns=[
+        ['#REC-0041','Walk-in','4','M-Pesa','KES 2,450','09:42 AM'],
+        ['#REC-0040','Mama Njeri','2','Cash','KES 780','09:18 AM'],
+        ['#REC-0039','Wanjiku Stores','8','M-Pesa','KES 6,200','08:55 AM'],
+        ['#REC-0038','Tasha Boutique','12','Card','KES 11,400','08:31 AM'],
+        ['#REC-0037','Walk-in','1','Cash','KES 320','08:10 AM'],
+      ];
+      pdf.setFillColor(...cGreen);pdf.rect(m,y,cW,7,'F');
+      pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);
+      cx=m+3;txnHdrs.forEach((h,i)=>{pdf.text(h,cx,y+4.8);cx+=txnCols[i];});y+=7;
+      txns.forEach((row,ri)=>{
+        pdf.setFillColor(ri%2===0?255:245,ri%2===0?255:247,ri%2===0?255:245);
+        pdf.rect(m,y,cW,6.5,'F');
+        pdf.setTextColor(...cInk);pdf.setFont('helvetica','normal');pdf.setFontSize(8.5);
+        cx=m+3;row.forEach((c,i)=>{pdf.text(c,cx,y+4.5);cx+=txnCols[i];});y+=6.5;
+      });
+    }
+
+    // Footer
+    pdf.setFillColor(...cBg);pdf.rect(0,pageH-18,pageW,18,'F');
+    pdf.setFillColor(...cGreen);pdf.rect(0,pageH-18,pageW,1,'F');
+    pdf.setTextColor(...cGray);pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);
+    pdf.text('Pendo Packaging POS  ·  Chuka Town, Tharaka-Nithi County  ·  Kenya',m,pageH-11);
+    pdf.text('Generated: '+new Date().toLocaleString('en-KE'),m,pageH-5.5);
+    pdf.setFont('helvetica','bold');pdf.setTextColor(...cGreen);pdf.setFontSize(7.5);
+    pdf.text('CONFIDENTIAL — For internal use only',pageW-m-60,pageH-11);
+    pdf.setFont('helvetica','normal');pdf.setTextColor(...cGray);
+    pdf.text('Page 1 of 1',pageW-m-14,pageH-5.5);
+
+    pdf.save('Pendo-Sales-Report-'+new Date().toISOString().slice(0,10)+'.pdf');
+    hideLoader();showToast('✅ Report exported as PDF','success');
+  }catch(e){
+    hideLoader();showToast('❌ Could not generate PDF','error');console.error(e);
+  }
+}
+
+// ══ KRA TURNOVER TAX (TOT) ENGINE ══════════════════════
+// Scalable config — update TOT_RATE here when KRA changes the rate
+const TOT_CONFIG = {
+  rate: 0.015,       // 1.5% — update this single value if KRA changes the rate
+  enabled: true,
+  label: 'Turnover Tax (TOT)',
+  authority: 'Kenya Revenue Authority',
+};
+
+function getTOTRate(){ return TOT_CONFIG.rate; }
+function calcTOT(grossSales){ return parseFloat((grossSales * getTOTRate()).toFixed(2)); }
+function calcNetRevenue(grossSales){ return parseFloat((grossSales - calcTOT(grossSales)).toFixed(2)); }
+
+function toggleTOT(el){
+  el.classList.toggle('on');
+  TOT_CONFIG.enabled = el.classList.contains('on');
+  showToast(TOT_CONFIG.enabled ? '✅ TOT enabled' : 'TOT disabled', TOT_CONFIG.enabled ? 'success' : '');
+}
+function updateTOTRate(val){
+  const r = parseFloat(val);
+  if(isNaN(r)||r<0||r>100){ showToast('Invalid TOT rate','error'); return; }
+  TOT_CONFIG.rate = r/100;
+  showToast('✅ TOT rate updated to '+r+'%', 'success');
+  renderTOTReport();
+}
+
+// Monthly sales data — in a real deployment this comes from the database
+function getTOTMonthlyData(month, year){
+  const seedWeeks = [
+    { week:'Week 1', gross:68400, tx:22 },
+    { week:'Week 2', gross:74200, tx:26 },
+    { week:'Week 3', gross:81600, tx:31 },
+    { week:'Week 4', gross:88200, tx:34 },
+  ];
+  // Augment with any live session sales for current month/year
+  const now = new Date();
+  if(month === now.getMonth() && year === now.getFullYear() && cashierSales.length){
+    const sessionGross = cashierSales.reduce((s,x)=>s+x.tot, 0);
+    seedWeeks[seedWeeks.length-1].gross += sessionGross;
+    seedWeeks[seedWeeks.length-1].tx += cashierSales.length;
+  }
+  return seedWeeks;
+}
+
+function renderTOTReport(){
+  const mSel = document.getElementById('tot-month');
+  const ySel = document.getElementById('tot-year');
+  const month = parseInt(mSel ? mSel.value : new Date().getMonth());
+  const year  = parseInt(ySel ? ySel.value : new Date().getFullYear());
+  const weeks = getTOTMonthlyData(month, year);
+
+  const totalGross = weeks.reduce((s,w)=>s+w.gross, 0);
+  const totalTOT   = calcTOT(totalGross);
+  const totalNet   = calcNetRevenue(totalGross);
+  const totalTx    = weeks.reduce((s,w)=>s+w.tx, 0);
+
+  const fmt = n => 'KES '+n.toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const el = id => document.getElementById(id);
+  if(el('tot-gross-sales')) el('tot-gross-sales').textContent = fmt(totalGross);
+  if(el('tot-tax-amount'))  el('tot-tax-amount').textContent  = fmt(totalTOT);
+  if(el('tot-net-revenue')) el('tot-net-revenue').textContent = fmt(totalNet);
+  if(el('tot-tx-count'))    el('tot-tx-count').textContent    = totalTx;
+
+  const tbody = el('tot-tbody');
+  const tfoot = el('tot-tfoot');
+  if(tbody){
+    tbody.innerHTML = weeks.map((w,i)=>{
+      const wTOT = calcTOT(w.gross);
+      const wNet = calcNetRevenue(w.gross);
+      return `<tr style="${i%2===1?'background:var(--g50)':''}">
+        <td style="font-weight:600">${w.week}</td>
+        <td style="font-weight:700;color:var(--green)">${fmt(w.gross)}</td>
+        <td style="font-weight:700;color:var(--danger)">${fmt(wTOT)}</td>
+        <td style="font-weight:700;color:var(--info)">${fmt(wNet)}</td>
+        <td><span class="badge bb">${w.tx}</span></td>
+      </tr>`;
+    }).join('');
+  }
+  if(tfoot){
+    tfoot.innerHTML = `<tr style="background:var(--forest);color:#fff">
+      <td style="font-weight:800;padding:12px 14px">MONTHLY TOTAL</td>
+      <td style="font-weight:800;padding:12px 14px">${fmt(totalGross)}</td>
+      <td style="font-weight:800;padding:12px 14px;color:#fde68a">${fmt(totalTOT)}</td>
+      <td style="font-weight:800;padding:12px 14px">${fmt(totalNet)}</td>
+      <td style="font-weight:800;padding:12px 14px">${totalTx}</td>
+    </tr>`;
+  }
+
+  const cEl = el('totTrendChart');
+  if(cEl){
+    if(cEl._chartInst) cEl._chartInst.destroy();
+    cEl._chartInst = new Chart(cEl, {
+      type:'bar',
+      data:{
+        labels: weeks.map(w=>w.week),
+        datasets:[
+          {label:'Gross Sales',data:weeks.map(w=>w.gross),backgroundColor:'#1d5733',borderRadius:6,borderSkipped:false},
+          {label:'TOT (1.5%)',data:weeks.map(w=>calcTOT(w.gross)),backgroundColor:'#c0392b',borderRadius:6,borderSkipped:false},
+          {label:'Net Revenue',data:weeks.map(w=>calcNetRevenue(w.gross)),backgroundColor:'#1a56db',borderRadius:6,borderSkipped:false},
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{font:{size:10},color:'#3a5a4a',boxWidth:12}}},
+        scales:{
+          x:{grid:{display:false},ticks:{font:{size:10},color:'#6f9080'}},
+          y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:10},color:'#6f9080',callback:v=>v>=1000?Math.round(v/1000)+'K':v}}
+        }
+      }
+    });
+  }
+}
+
+// Set TOT month selector to current month on load
+(function initTOTFilters(){
+  const now = new Date();
+  const mSel = document.getElementById('tot-month');
+  const ySel = document.getElementById('tot-year');
+  if(mSel) mSel.value = now.getMonth();
+  if(ySel) ySel.value = now.getFullYear();
+})();
+
+function updateDashTOT(){
+  const now = new Date();
+  const weeks = getTOTMonthlyData(now.getMonth(), now.getFullYear());
+  const totalGross = weeks.reduce((s,w)=>s+w.gross, 0);
+  const totalTOT   = calcTOT(totalGross);
+  const fmt = n => 'KES '+n.toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const el  = id => document.getElementById(id);
+  if(el('dash-kpi-tot'))     el('dash-kpi-tot').textContent     = fmt(totalTOT);
+  if(el('dash-kpi-monthly')) el('dash-kpi-monthly').textContent = fmt(totalGross);
+  if(el('dash-kpi-tot-sub')) el('dash-kpi-tot-sub').textContent = 'Gross: '+fmt(totalGross);
+}
+
+// ══ TOT REPORT — EXPORT CSV ════════════════════════════
+function exportTOTCSV(){
+  const mSel = document.getElementById('tot-month');
+  const ySel = document.getElementById('tot-year');
+  const month = parseInt(mSel ? mSel.value : new Date().getMonth());
+  const year  = parseInt(ySel ? ySel.value : new Date().getFullYear());
+  const mNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const weeks = getTOTMonthlyData(month, year);
+  const totalGross = weeks.reduce((s,w)=>s+w.gross, 0);
+  const totalTOT   = calcTOT(totalGross);
+  const totalNet   = calcNetRevenue(totalGross);
+  const rows=[
+    ['PENDO PACKAGING — KRA TURNOVER TAX REPORT'],
+    ['Period: '+mNames[month]+' '+year],
+    ['Generated: '+new Date().toLocaleString('en-KE')],
+    [],
+    ['Week','Gross Sales (KES)','Turnover Tax 1.5% (KES)','Net Revenue (KES)','Transactions'],
+    ...weeks.map(w=>[w.week, w.gross.toFixed(2), calcTOT(w.gross).toFixed(2), calcNetRevenue(w.gross).toFixed(2), w.tx]),
+    [],
+    ['MONTHLY SUMMARY'],
+    ['Total Gross Sales','KES '+totalGross.toFixed(2)],
+    ['Turnover Tax (1.5%)','KES '+totalTOT.toFixed(2)],
+    ['Net Revenue After TOT','KES '+totalNet.toFixed(2)],
+    [],
+    ['Tax Regime','KRA Turnover Tax (TOT)'],
+    ['Rate','1.5% of Monthly Gross Turnover'],
+    ['Filing Frequency','Monthly — Due by 20th of following month'],
+  ];
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  a.download='Pendo-KRA-TOT-'+mNames[month]+'-'+year+'.csv';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},200);
+  showToast('✅ TOT report exported as CSV','success');
+}
+
+// ══ TOT REPORT — EXPORT PDF ════════════════════════════
+async function exportTOTPDF(){
+  if(typeof jspdf==='undefined'){showToast('PDF library not ready, try again…','error');return;}
+  showLoader();
+  try{
+    const {jsPDF}=jspdf;
+    const mSel = document.getElementById('tot-month');
+    const ySel = document.getElementById('tot-year');
+    const month = parseInt(mSel ? mSel.value : new Date().getMonth());
+    const year  = parseInt(ySel ? ySel.value : new Date().getFullYear());
+    const mNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const weeks = getTOTMonthlyData(month, year);
+    const totalGross = weeks.reduce((s,w)=>s+w.gross, 0);
+    const totalTOT   = calcTOT(totalGross);
+    const totalNet   = calcNetRevenue(totalGross);
+
+    const pdf=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+    const pageW=210,pageH=297,m=14,cW=pageW-m*2;
+    const cGreen=[29,87,51],cGold=[212,160,23],cInk=[20,34,25],cGray=[111,144,128];
+    const cRed=[192,57,43],cBlue=[26,86,219],cBg=[240,244,242];
+    const fmt=(n)=>'KES '+n.toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+    // Header
+    pdf.setFillColor(...cGreen);pdf.rect(0,0,pageW,38,'F');
+    pdf.setFillColor(...cGold);pdf.rect(0,35,pageW,3,'F');
+    pdf.setTextColor(255,255,255);
+    pdf.setFont('helvetica','bold');pdf.setFontSize(21);
+    pdf.text('PENDO PACKAGING',m,14);
+    pdf.setFont('helvetica','normal');pdf.setFontSize(8.5);
+    pdf.text('Chuka Town, Tharaka-Nithi County, Kenya  ·  +254 712 345 678  ·  M-Pesa: 5678901',m,22);
+
+    // KRA badge
+    pdf.setFillColor(255,255,255);pdf.roundedRect(pageW-m-52,7,52,20,3,3,'F');
+    pdf.setTextColor(...cGreen);pdf.setFont('helvetica','bold');pdf.setFontSize(8);
+    pdf.text('KENYA REVENUE',pageW-m-48,14);
+    pdf.text('AUTHORITY',pageW-m-42,20);
+    pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(...cGray);
+    pdf.text('TOT Compliant',pageW-m-45,26);
+
+    let y=44;
+    pdf.setTextColor(...cInk);pdf.setFont('helvetica','bold');pdf.setFontSize(14);
+    pdf.text('KRA TURNOVER TAX REPORT',m,y);
+    pdf.setDrawColor(...cGold);pdf.setLineWidth(1);pdf.line(m,y+2,m+90,y+2);
+    pdf.setDrawColor(...cGray);pdf.setLineWidth(0.3);
+    pdf.setFont('helvetica','normal');pdf.setFontSize(8.5);pdf.setTextColor(...cGray);
+    pdf.text('Period: '+mNames[month]+' '+year+'   |   Rate: '+(TOT_CONFIG.rate*100).toFixed(1)+'% of Monthly Gross Turnover   |   Regime: Turnover Tax (TOT)',m,y+8);
+    pdf.text('Generated: '+new Date().toLocaleString('en-KE'),m,y+14);
+    y+=22;
+
+    pdf.line(m,y,pageW-m,y);y+=8;
+
+    // Summary cards
+    const cardW=(cW-8)/3;
+    [{l:'TOTAL GROSS SALES',v:fmt(totalGross),c:cGreen},{l:'TURNOVER TAX ('+((TOT_CONFIG.rate*100).toFixed(1))+'%)',v:fmt(totalTOT),c:cRed},{l:'NET REVENUE AFTER TAX',v:fmt(totalNet),c:cBlue}].forEach((sc,i)=>{
+      const cx=m+i*(cardW+4);
+      pdf.setFillColor(...cBg);pdf.roundedRect(cx,y,cardW,26,3,3,'F');
+      pdf.setFillColor(...sc.c);pdf.rect(cx,y,cardW,3,'F');
+      pdf.setTextColor(...sc.c);pdf.setFont('helvetica','bold');pdf.setFontSize(12);
+      pdf.text(sc.v,cx+4,y+15);
+      pdf.setFont('helvetica','normal');pdf.setFontSize(6.5);pdf.setTextColor(...cGray);
+      pdf.text(sc.l,cx+4,y+22);
+    });
+    y+=34;
+
+    // Table header
+    pdf.setFont('helvetica','bold');pdf.setFontSize(11);pdf.setTextColor(...cGreen);
+    pdf.text('Weekly Breakdown',m,y);
+    pdf.setDrawColor(...cGreen);pdf.line(m,y+1.5,m+pdf.getTextWidth('Weekly Breakdown'),y+1.5);
+    y+=8;
+
+    const cols=[30,46,40,46,20];
+    const hdrs=['Week','Gross Sales','TOT','Net Revenue','Tx'];
+    pdf.setFillColor(...cGreen);pdf.rect(m,y,cW,7,'F');
+    pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);
+    let cx=m+3;hdrs.forEach((h,i)=>{pdf.text(h,cx,y+4.8);cx+=cols[i];});y+=7;
+    weeks.forEach((w,ri)=>{
+      pdf.setFillColor(ri%2===0?255:245,ri%2===0?255:247,ri%2===0?255:245);pdf.rect(m,y,cW,7,'F');
+      const row=[w.week,fmt(w.gross),fmt(calcTOT(w.gross)),fmt(calcNetRevenue(w.gross)),String(w.tx)];
+      pdf.setTextColor(...cInk);pdf.setFont('helvetica','normal');pdf.setFontSize(8.5);
+      cx=m+3;row.forEach((c,i)=>{pdf.text(c,cx,y+4.8);cx+=cols[i];});y+=7;
+    });
+    pdf.setFillColor(...cGreen);pdf.rect(m,y,cW,8,'F');
+    pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);
+    cx=m+3;
+    ['TOTAL',fmt(totalGross),fmt(totalTOT),fmt(totalNet),String(weeks.reduce((s,w)=>s+w.tx,0))].forEach((c,i)=>{pdf.text(c,cx,y+5.2);cx+=cols[i];});
+    y+=16;
+
+    // KRA note
+    pdf.setFillColor(253,243,216);pdf.roundedRect(m,y,cW,18,3,3,'F');
+    pdf.setFillColor(...cGold);pdf.rect(m,y,3,18,'F');
+    pdf.setTextColor(...cInk);pdf.setFont('helvetica','bold');pdf.setFontSize(9);
+    pdf.text('KRA Filing Instructions',m+6,y+7);
+    pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(...cGray);
+    pdf.text('Turnover Tax (1.5%) is due on or before the 20th of the following month.',m+6,y+12);
+    pdf.text('File via iTax: itax.kra.go.ke  |  Pay via M-Pesa Paybill 572572  |  Account: your KRA PIN',m+6,y+17);
+    y+=26;
+
+    // Signature
+    pdf.setDrawColor(...cGray);pdf.setLineWidth(0.3);
+    pdf.line(m,y+14,m+60,y+14);pdf.line(pageW-m-60,y+14,pageW-m,y+14);
+    pdf.setTextColor(...cGray);pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);
+    pdf.text('Authorised Signatory / Director',m,y+19);
+    pdf.text('Accountant / Tax Representative',pageW-m-60,y+19);
+    pdf.setFont('helvetica','bold');pdf.setTextColor(...cInk);
+    pdf.text('Name: _________________________',m,y+26);
+    pdf.text('Date: __________________________',m,y+32);
+
+    // Footer
+    pdf.setFillColor(...cBg);pdf.rect(0,pageH-18,pageW,18,'F');
+    pdf.setFillColor(...cGreen);pdf.rect(0,pageH-18,pageW,1,'F');
+    pdf.setTextColor(...cGray);pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);
+    pdf.text('Pendo Packaging POS  ·  Chuka Town, Tharaka-Nithi  ·  KRA TOT Report',m,pageH-11);
+    pdf.text('Generated: '+new Date().toLocaleString('en-KE'),m,pageH-5.5);
+    pdf.setFont('helvetica','bold');pdf.setTextColor(...cGreen);
+    pdf.text('CONFIDENTIAL — KRA TAX DOCUMENT',pageW-m-72,pageH-11);
+    pdf.setFont('helvetica','normal');pdf.setTextColor(...cGray);
+    pdf.text('Page 1 of 1',pageW-m-14,pageH-5.5);
+
+    pdf.save('Pendo-KRA-TOT-'+mNames[month]+'-'+year+'.pdf');
+    hideLoader();showToast('✅ KRA TOT Report exported as PDF','success');
+  }catch(e){
+    hideLoader();showToast('❌ Could not generate PDF','error');console.error(e);
+  }
+}
+
+renderCart();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PENDO PWA — Install Banner, Service Worker, Manifest
+     All inline — single HTML file, zero external dependencies
+     ═══════════════════════════════════════════════════════════ -->
+
+<!-- PWA Install Banner -->
+<div id="pwa-banner" style="
+  display:none; position:fixed; bottom:0; left:0; right:0; z-index:9990;
+  background:linear-gradient(135deg,#0B3D23,#0B6E4F);
+  padding:14px 18px 18px; padding-bottom:max(18px,env(safe-area-inset-bottom));
+  box-shadow:0 -4px 24px rgba(0,0,0,0.3);
+  border-radius:20px 20px 0 0;
+  animation:bannerSlide .4s cubic-bezier(.4,0,.2,1);
+  font-family:'Plus Jakarta Sans',sans-serif;
+">
+<style>
+@keyframes bannerSlide{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+#pwa-banner .pwa-row{display:flex;align-items:center;gap:14px}
+#pwa-banner .pwa-logo{width:52px;height:52px;background:linear-gradient(135deg,#D4A017,#a07a10);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:26px;box-shadow:0 4px 12px rgba(212,160,23,.3)}
+#pwa-banner .pwa-text{flex:1;min-width:0}
+#pwa-banner .pwa-title{font-size:15px;font-weight:800;color:#fff;margin-bottom:2px}
+#pwa-banner .pwa-sub{font-size:12px;color:rgba(255,255,255,.65);line-height:1.4}
+#pwa-banner .pwa-btns{display:flex;gap:8px;margin-top:12px}
+#pwa-banner .pwa-install-btn{flex:1;height:46px;background:linear-gradient(135deg,#D4A017,#c09010);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(212,160,23,.3);transition:.18s ease}
+#pwa-banner .pwa-install-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(212,160,23,.4)}
+#pwa-banner .pwa-install-btn:active{transform:scale(.97)}
+#pwa-banner .pwa-dismiss-btn{width:46px;height:46px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);border-radius:12px;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.18s ease}
+#pwa-banner .pwa-dismiss-btn:hover{background:rgba(255,255,255,.18)}
+#pwa-banner .pwa-features{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+#pwa-banner .pwa-feat{display:flex;align-items:center;gap:5px;font-size:11px;color:rgba(255,255,255,.6);font-weight:500}
+#pwa-banner .pwa-feat span{font-size:14px}
+</style>
+<div class="pwa-row">
+  <div class="pwa-logo">📦</div>
+  <div class="pwa-text">
+    <div class="pwa-title">Install Pendo POS</div>
+    <div class="pwa-sub">Add to home screen for the full app experience — works offline too!</div>
+  </div>
+</div>
+<div class="pwa-features">
+  <div class="pwa-feat"><span>⚡</span> Fast & offline</div>
+  <div class="pwa-feat"><span>📱</span> Native app feel</div>
+  <div class="pwa-feat"><span>🔔</span> Stock alerts</div>
+  <div class="pwa-feat"><span>🖨️</span> Receipt printing</div>
+</div>
+<div class="pwa-btns">
+  <button class="pwa-install-btn" onclick="installPWA()">
+    <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+    Install App
+  </button>
+  <button class="pwa-dismiss-btn" onclick="dismissBanner()" title="Dismiss">✕</button>
+</div>
+</div>
+
+<!-- iOS Install Tip (shown on Safari/iOS when PWA prompt isn't available) -->
+<div id="ios-banner" style="
+  display:none; position:fixed; bottom:0; left:0; right:0; z-index:9990;
+  background:linear-gradient(135deg,#0B3D23,#0B6E4F);
+  padding:16px 18px 20px; padding-bottom:max(20px,env(safe-area-inset-bottom));
+  box-shadow:0 -4px 24px rgba(0,0,0,0.3);
+  border-radius:20px 20px 0 0;
+  animation:bannerSlide .4s cubic-bezier(.4,0,.2,1);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  text-align:center;
+">
+<div style="font-size:24px;margin-bottom:8px">📲</div>
+<div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:4px">Install Pendo POS on iPhone</div>
+<div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.6;margin-bottom:12px">
+  Tap <strong style="background:rgba(255,255,255,.15);padding:2px 7px;border-radius:6px">Share</strong> 
+  then select <strong style="background:rgba(255,255,255,.15);padding:2px 7px;border-radius:6px">Add to Home Screen</strong> 
+  to install the full app.
+</div>
+<div style="display:flex;justify-content:center;align-items:flex-end;gap:4px;margin-bottom:8px">
+  <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.6)" style="width:20px;height:20px"><path d="M16 5l-1.42 1.42-1.59-1.59V16h-1.98V4.83L9.42 6.42 8 5l4-4 4 4zm4 5v11c0 1.1-.9 2-2 2H6c-1.11 0-2-.9-2-2V10c0-1.11.89-2 2-2h3v2H6v11h12V10h-3V8h3c1.1 0 2 .89 2 2z"/></svg>
+  <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.4)" style="width:16px;height:16px"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+  <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.6)" style="width:20px;height:20px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+</div>
+<button onclick="document.getElementById('ios-banner').style.display='none'" style="padding:8px 24px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);border-radius:10px;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Got it</button>
+</div>
+
+<!-- Offline Toast -->
+<div id="offline-toast" style="
+  display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%);
+  background:#c0392b; color:#fff; padding:10px 20px; border-radius:50px;
+  font-size:13px; font-weight:700; z-index:9995; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  display:none; align-items:center; gap:8px; font-family:'Plus Jakarta Sans',sans-serif;
+  animation:bannerSlide .3s ease;
+">
+  ⚠️ You're offline — POS still works!
+</div>
+
+<!-- Online Toast -->
+<div id="online-toast" style="
+  display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%);
+  background:#0B6E4F; color:#fff; padding:10px 20px; border-radius:50px;
+  font-size:13px; font-weight:700; z-index:9995; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  align-items:center; gap:8px; font-family:'Plus Jakarta Sans',sans-serif;
+">
+  ✅ Back online!
+</div>
+
+<!-- Update Available Banner -->
+<div id="update-banner" style="
+  display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%);
+  background:linear-gradient(135deg,#1d5733,#0B6E4F); color:#fff;
+  padding:10px 18px; border-radius:50px; font-size:13px; font-weight:700;
+  z-index:9995; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  align-items:center; gap:10px; font-family:'Plus Jakarta Sans',sans-serif; cursor:pointer;
+  white-space:nowrap;
+" onclick="window.location.reload()">
+  🔄 Update available — tap to refresh
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   PENDO PWA ENGINE
+   - Inline Service Worker (registered via blob URL)
+   - Inline Web App Manifest (registered via blob URL)
+   - Install prompt handling
+   - Offline/online detection
+   - iOS install detection
+   ═══════════════════════════════════════════════════════════════ */
+
+(function PendoPWA() {
+  'use strict';
+
+  /* ── 1. INLINE MANIFEST ──────────────────────────────── */
+  const manifest = {
+    name: 'Pendo Packaging POS',
+    short_name: 'Pendo POS',
+    description: 'Professional POS, Inventory & KRA TOT system for Pendo Packaging, Chuka Town',
+    start_url: './',
+    display: 'standalone',
+    orientation: 'any',
+    background_color: '#0B3D23',
+    theme_color: '#0B6E4F',
+    categories: ['business', 'finance', 'productivity'],
+    lang: 'en-KE',
+    dir: 'ltr',
+    scope: './',
+    icons: [
+      { src: makeSvgIcon(48),  sizes: '48x48',   type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: makeSvgIcon(72),  sizes: '72x72',   type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: makeSvgIcon(96),  sizes: '96x96',   type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: makeSvgIcon(128), sizes: '128x128', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: makeSvgIcon(144), sizes: '144x144', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: makeSvgIcon(152), sizes: '152x152', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: makeSvgIcon(192), sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: makeSvgIcon(256), sizes: '256x256', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: makeSvgIcon(512), sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
+    ],
+    shortcuts: [
+      { name: 'Point of Sale', short_name: 'POS', description: 'Open the cashier POS screen', url: './?page=pos', icons: [{ src: makeSvgIcon(96), sizes: '96x96' }] },
+      { name: 'Inventory', short_name: 'Inventory', description: 'Manage stock levels', url: './?page=inventory', icons: [{ src: makeSvgIcon(96), sizes: '96x96' }] },
+      { name: 'Reports', short_name: 'Reports', description: 'View sales analytics', url: './?page=reports', icons: [{ src: makeSvgIcon(96), sizes: '96x96' }] },
+    ],
+    screenshots: [
+      { label: 'Dashboard', form_factor: 'wide' },
+      { label: 'Point of Sale', form_factor: 'narrow' }
+    ],
+    prefer_related_applications: false
+  };
+
+  function makeSvgIcon(size) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+      <rect width="${size}" height="${size}" rx="${size * 0.18}" fill="#0B6E4F"/>
+      <rect width="${size}" height="${size * 0.04}" rx="0" fill="#D4A017" y="${size * 0.96}"/>
+      <text x="50%" y="58%" font-size="${size * 0.52}" text-anchor="middle" dominant-baseline="middle" font-family="system-ui,sans-serif">📦</text>
+      <text x="50%" y="83%" font-size="${size * 0.13}" text-anchor="middle" dominant-baseline="middle" fill="rgba(255,255,255,0.75)" font-family="system-ui,sans-serif" font-weight="700" letter-spacing="${size * 0.005}">PENDO POS</text>
+    </svg>`;
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  }
+
+  // Register manifest as blob
+  const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  const manifestURL = URL.createObjectURL(manifestBlob);
+  const mLink = document.getElementById('pwa-manifest-link');
+  if (mLink) mLink.href = manifestURL;
+
+  // Set apple-touch-icon
+  const appleIcon = document.getElementById('apple-icon');
+  if (appleIcon) appleIcon.href = makeSvgIcon(180);
+
+  // Set favicon
+  const faviconEl = document.getElementById('favicon-svg');
+  if (faviconEl) faviconEl.href = makeSvgIcon(32);
+
+  /* ── 2. INLINE SERVICE WORKER ────────────────────────── */
+  const CACHE_VERSION = 'pendo-pos-v1.0.0';
+  const CACHE_ASSETS  = 'pendo-assets-v1.0.0';
+
+  // SW code as a string — will be blobified and registered
+  const swCode = `
+const CACHE_NAME = '${CACHE_VERSION}';
+const ASSETS_CACHE = '${CACHE_ASSETS}';
+const APP_URL = self.location.href.replace('/sw-blob', '');
+
+// Files to pre-cache on install
+const PRECACHE_URLS = [
+  APP_URL,
+  'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap',
+];
+
+// External CDN resources to cache on first use
+const CDN_HOSTS = [
+  'cdnjs.cloudflare.com',
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+];
+
+self.addEventListener('install', (e) => {
+  console.log('[PendoPWA SW] Installing v${CACHE_VERSION}');
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // Cache the main app page
+      try {
+        const req = new Request(APP_URL, { cache: 'reload' });
+        const res = await fetch(req);
+        if (res.ok) await cache.put(APP_URL, res);
+      } catch(err) {
+        console.warn('[PendoPWA SW] Pre-cache failed (offline?)', err.message);
+      }
+      return cache;
+    })
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (e) => {
+  console.log('[PendoPWA SW] Activating');
+  e.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter(k => k !== CACHE_NAME && k !== ASSETS_CACHE)
+          .map(k => { console.log('[PendoPWA SW] Deleting old cache:', k); return caches.delete(k); })
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+  
+  // Skip non-GET and chrome-extension
+  if (e.request.method !== 'GET') return;
+  if (url.protocol === 'chrome-extension:') return;
+  if (url.protocol === 'blob:') return;
+
+  const isCDN = CDN_HOSTS.some(h => url.hostname.includes(h));
+  const isApp = url.href === APP_URL || url.pathname === '/' || url.href.startsWith(APP_URL.split('?')[0]);
+
+  if (isCDN) {
+    // CDN: Cache-first
+    e.respondWith(
+      caches.open(ASSETS_CACHE).then(async (cache) => {
+        const cached = await cache.match(e.request);
+        if (cached) return cached;
+        try {
+          const res = await fetch(e.request);
+          if (res.ok) cache.put(e.request, res.clone());
+          return res;
+        } catch {
+          return new Response('', { status: 503 });
+        }
+      })
+    );
+    return;
+  }
+
+  if (isApp) {
+    // App shell: Network-first with cache fallback
+    e.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        try {
+          const res = await fetch(e.request);
+          if (res.ok) cache.put(e.request, res.clone());
+          return res;
+        } catch {
+          const cached = await cache.match(e.request);
+          if (cached) return cached;
+          // Return basic offline page
+          return new Response(getOfflinePage(), {
+            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          });
+        }
+      })
+    );
+    return;
+  }
+});
+
+// Message handler for skip waiting
+self.addEventListener('message', (e) => {
+  if (e.data === 'skipWaiting') self.skipWaiting();
+});
+
+function getOfflinePage() {
+  return \`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pendo POS — Offline</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#0B3D23,#0B6E4F);min-height:100vh;display:flex;align-items:center;justify-content:center;color:white;text-align:center;padding:24px}.card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:40px 32px;max-width:360px;backdrop-filter:blur(12px)}.icon{font-size:64px;margin-bottom:20px}.title{font-size:26px;font-weight:800;margin-bottom:8px}.sub{font-size:15px;opacity:.7;line-height:1.6;margin-bottom:24px}.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:linear-gradient(135deg,#D4A017,#c09010);color:white;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;text-decoration:none}.features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}.feat{background:rgba(255,255,255,.06);border-radius:12px;padding:12px;font-size:12px;opacity:.8}</style>
+</head><body>
+<div class="card">
+  <div class="icon">📦</div>
+  <div class="title">Pendo POS</div>
+  <div class="sub">You're currently offline, but your POS data and recent transactions are saved locally.</div>
+  <button class="btn" onclick="window.location.reload()">⟳ Try Again</button>
+  <div class="features">
+    <div class="feat">✅ Sales data saved</div>
+    <div class="feat">📦 Products cached</div>
+    <div class="feat">🧾 Receipts ready</div>
+    <div class="feat">📊 Reports available</div>
+  </div>
+</div>
+</body></html>\`;
+}
+`;
+
+
+  // ── SERVICE WORKER ─────────────────────────────────────────────
+  // Root cause: blob: URLs are blocked for SW registration in all browsers.
+  // Fix: Use Cache API pre-caching from the page (works everywhere) + a
+  // fetch() interceptor as the offline fallback. No SW file needed.
+
+  // 1. Pre-cache this page for offline use via Cache API
+  if ('caches' in window) {
+    (async () => {
+      try {
+        const cache = await caches.open('pendo-pos-v1');
+        if (location.protocol.startsWith('http')) {
+          const existing = await cache.match(location.href);
+          if (!existing) {
+            const res = await fetch(location.href, { cache: 'reload' });
+            if (res && res.ok) { await cache.put(location.href, res); }
+            console.log('[PendoPWA] Page pre-cached for offline ✅');
+          } else {
+            console.log('[PendoPWA] Offline cache already warm ✅');
+          }
+        } else {
+          console.log('[PendoPWA] file:// mode — Cache API ready, no pre-fetch needed');
+        }
+      } catch(e) {
+        console.log('[PendoPWA] Cache pre-warm skipped:', e.message);
+      }
+    })();
+  }
+
+  // 2. fetch() interceptor — serves CDN assets from cache when offline
+  if ('caches' in window) {
+    const _origFetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const method = (init && init.method) ? init.method.toUpperCase() : 'GET';
+      try {
+        const res = await _origFetch(input, init);
+        if (res.ok && method === 'GET') {
+          caches.open('pendo-assets-v1').then(c => c.put(input, res.clone())).catch(() => {});
+        }
+        return res;
+      } catch(networkErr) {
+        if (method !== 'GET') throw networkErr;
+        const cached = await caches.match(input).catch(() => null);
+        if (cached) {
+          const url = typeof input === 'string' ? input : input.url;
+          console.log('[PendoPWA] Offline → serving from cache:', url.split('/').pop().split('?')[0]);
+          return cached;
+        }
+        throw networkErr;
+      }
+    };
+    console.log('[PendoPWA] Offline fetch interceptor active ✅');
+  }
+
+  // 3. Real SW registration — only works from http(s), gives full offline support
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    // Write SW code to a <script> tag with a unique URL via a Blob + importScripts workaround
+    // Most reliable single-file approach: encode SW as base64 data URL in a dedicated script tag
+    try {
+      const encoded = btoa(unescape(encodeURIComponent(swCode)));
+      const dataUrl  = 'data:application/javascript;base64,' + encoded;
+      // Firefox and Safari block data: SW; Chrome allows it on https
+      navigator.serviceWorker.register(dataUrl, { scope: './' })
+        .then(reg => {
+          console.log('[PendoPWA] SW registered via data URL ✅', reg.scope);
+          reg.addEventListener('updatefound', () => {
+            const s = reg.installing;
+            if (!s) return;
+            s.addEventListener('statechange', () => {
+              if (s.state === 'installed' && navigator.serviceWorker.controller) showUpdateBanner();
+            });
+          });
+        })
+        .catch(err => {
+          // Expected on non-Chrome or non-https — Cache API fallback already active above
+          console.log('[PendoPWA] SW via data URL not supported in this browser/context — Cache API offline mode active instead. (' + err.name + ')');
+        });
+    } catch(encErr) {
+      console.log('[PendoPWA] SW encoding failed:', encErr.message);
+    }
+  } else if ('serviceWorker' in navigator) {
+    console.log('[PendoPWA] Not on http(s) — SW skipped. Cache API offline mode is active.');
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('[PendoPWA] New SW controller active');
+    });
+  }
+
+  /* ── 3. INSTALL PROMPT ───────────────────────────────── */
+  let deferredPrompt = null;
+  const bannerKey = 'pendo-pwa-banner-dismissed';
+  const installKey = 'pendo-pwa-installed';
+
+  // Detect if already installed
+  const isInstalled = () =>
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    localStorage.getItem(installKey) === 'true';
+
+  // iOS detection
+  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isSafari = () => /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    console.log('[PendoPWA] Install prompt captured ✅');
+
+    // Show banner after 3s if not dismissed/installed
+    if (!isInstalled() && !sessionStorage.getItem(bannerKey)) {
+      setTimeout(() => showInstallBanner(), 3000);
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    console.log('[PendoPWA] App installed! 🎉');
+    localStorage.setItem(installKey, 'true');
+    hideInstallBanner();
+    deferredPrompt = null;
+    showFloatingToast('🎉 Pendo POS installed successfully!', 'success', 3500);
+  });
+
+  // iOS Safari: show tip after delay
+  if (isIOS() && isSafari() && !isInstalled() && !sessionStorage.getItem(bannerKey)) {
+    setTimeout(() => {
+      document.getElementById('ios-banner').style.display = 'block';
+    }, 4000);
+  }
+
+  function showInstallBanner() {
+    const b = document.getElementById('pwa-banner');
+    if (b && !isInstalled()) b.style.display = 'block';
+  }
+  function hideInstallBanner() {
+    const b = document.getElementById('pwa-banner');
+    const i = document.getElementById('ios-banner');
+    if (b) b.style.display = 'none';
+    if (i) i.style.display = 'none';
+  }
+
+  window.installPWA = async function() {
+    if (!deferredPrompt) {
+      showFloatingToast('ℹ️ Use browser menu to install', 'info', 3000);
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('[PendoPWA] User choice:', outcome);
+    deferredPrompt = null;
+    hideInstallBanner();
+    if (outcome === 'dismissed') {
+      showFloatingToast('You can install later from the browser menu', 'info', 3000);
+    }
+  };
+
+  window.dismissBanner = function() {
+    hideInstallBanner();
+    sessionStorage.setItem(bannerKey, '1');
+  };
+
+  /* ── 4. OFFLINE / ONLINE DETECTION ──────────────────── */
+  function showOfflineBanner() {
+    const el = document.getElementById('offline-toast');
+    if (el) { el.style.display = 'flex'; }
+    // Add offline indicator to topbar
+    const tb = document.getElementById('topbar-status') || createStatusDot();
+    if (tb) tb.style.background = '#c0392b';
+  }
+
+  function showOnlineBanner() {
+    const el = document.getElementById('offline-toast');
+    const on = document.getElementById('online-toast');
+    if (el) el.style.display = 'none';
+    if (on) {
+      on.style.display = 'flex';
+      setTimeout(() => { on.style.display = 'none'; }, 3000);
+    }
+    const tb = document.getElementById('topbar-status');
+    if (tb) tb.style.background = '#38955d';
+  }
+
+  function createStatusDot() {
+    const dot = document.createElement('div');
+    dot.id = 'topbar-status';
+    dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:#38955d;position:fixed;top:8px;right:8px;z-index:999;border:2px solid white;transition:.3s';
+    document.body.appendChild(dot);
+    return dot;
+  }
+
+  if (!navigator.onLine) showOfflineBanner();
+  window.addEventListener('offline', () => { console.log('[PendoPWA] Gone offline'); showOfflineBanner(); });
+  window.addEventListener('online',  () => { console.log('[PendoPWA] Back online');  showOnlineBanner(); });
+
+  /* ── 5. UPDATE BANNER ────────────────────────────────── */
+  function showUpdateBanner() {
+    const b = document.getElementById('update-banner');
+    if (b) b.style.display = 'flex';
+  }
+  window.showUpdateBanner = showUpdateBanner;
+
+  /* ── 6. TOAST HELPER ─────────────────────────────────── */
+  function showFloatingToast(msg, type='info', duration=3000) {
+    const t = document.createElement('div');
+    const bg = type==='success'?'#0B6E4F':type==='error'?'#c0392b':'#1d5733';
+    t.style.cssText = `position:fixed;top:72px;left:50%;transform:translateX(-50%);background:${bg};color:#fff;padding:10px 20px;border-radius:50px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif;animation:bannerSlide .3s ease;pointer-events:none;`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, duration);
+  }
+
+  /* ── 7. DEEPLINK SUPPORT ─────────────────────────────── */
+  // If app launched with ?page=X shortcut, navigate there after load
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetPage = urlParams.get('page');
+  if (targetPage) {
+    // Wait for app to be ready, then navigate
+    const tryNav = setInterval(() => {
+      if (document.getElementById(targetPage) && typeof go === 'function') {
+        clearInterval(tryNav);
+        const navEl = document.querySelector(`[data-page="${targetPage}"]`) ||
+                      document.querySelector(`[onclick*="go('${targetPage}']`);
+        setTimeout(() => go(targetPage, navEl), 500);
+      }
+    }, 200);
+    setTimeout(() => clearInterval(tryNav), 5000); // give up after 5s
+  }
+
+  /* ── 8. PWA DISPLAY MODE DETECTION ──────────────────── */
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('[PendoPWA] Running as installed PWA ✅');
+    document.documentElement.setAttribute('data-pwa', 'true');
+    // Hide bottom-of-screen safe area gaps for standalone mode
+    document.documentElement.style.setProperty('--pwa-standalone', '1');
+  }
+
+  // ── 9. SCREEN KEEP-AWAKE ─────────────────────────────
+  // Screen Wake Lock API requires a Permissions-Policy header to be set by the
+  // server and is blocked in iframes/sandboxed pages.
+  // We use a safe 3-layer fallback:
+  //   Layer 1: Wake Lock API  (works when served from real https server)
+  //   Layer 2: NoSleep.js technique (invisible <video> trick)
+  //   Layer 3: Periodic user-activity simulation (last resort)
+  let wakeLock = null;
+  let noSleepVideo = null;
+
+  function startNoSleepVideo() {
+    // Classic NoSleep technique: play a tiny looping invisible video
+    // This prevents sleep on mobile without needing any permissions
+    if (noSleepVideo) return;
+    try {
+      noSleepVideo = document.createElement('video');
+      noSleepVideo.setAttribute('playsinline', '');
+      noSleepVideo.setAttribute('muted', '');
+      noSleepVideo.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;';
+      // Tiny looping mp4 (1x1 transparent) encoded as data URI
+      const src = document.createElement('source');
+      src.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAhmcmVlAAAAGm1kYXQAAAGzABAHAAABthAJMluAQAAABtgAAABsaGR2ZAAAAAAAAAAAAQAAADhlbHN0AAAAAAAAAAEAAAA4AAAABQAAAQAB';
+      src.type = 'video/mp4';
+      noSleepVideo.appendChild(src);
+      noSleepVideo.loop = true;
+      document.body.appendChild(noSleepVideo);
+      noSleepVideo.play().catch(() => {
+        // Autoplay blocked — that's fine, screen will sleep normally
+        noSleepVideo.remove();
+        noSleepVideo = null;
+      });
+      console.log('[PendoPWA] NoSleep video technique active ✅');
+    } catch(e) {
+      console.log('[PendoPWA] NoSleep video failed:', e.message);
+    }
+  }
+
+  async function requestWakeLock() {
+    // Layer 1: Wake Lock API — only try if page is visible and on https
+    if ('wakeLock' in navigator && document.visibilityState === 'visible') {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => {
+          wakeLock = null;
+          console.log('[PendoPWA] Wake lock released');
+        });
+        console.log('[PendoPWA] Wake Lock API active ✅');
+        return; // Success — no need for fallbacks
+      } catch (err) {
+        // NotAllowedError = permissions policy blocked (iframe, sandbox, non-https)
+        // AbortError = page not visible
+        // Both are expected — fall through silently to Layer 2
+        if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+          console.log('[PendoPWA] Wake Lock unavailable (' + err.name + ') — using video fallback');
+        }
+      }
+    }
+    // Layer 2: NoSleep video (no permissions needed, works on mobile browsers)
+    startNoSleepVideo();
+  }
+
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+      if (wakeLock === null) await requestWakeLock();
+      if (noSleepVideo && noSleepVideo.paused) noSleepVideo.play().catch(() => {});
+    } else {
+      // Release wake lock when page hidden to save battery
+      if (wakeLock) { try { await wakeLock.release(); } catch(_) {} wakeLock = null; }
+    }
+  });
+
+  /* ── 10. KEYBOARD SHORTCUT HINTS ────────────────────── */
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey) {
+      const map = { 'd':'dashboard','p':'pos','i':'inventory','r':'reports','s':'settings' };
+      const pg = map[e.key.toLowerCase()];
+      if (pg && typeof go === 'function') {
+        e.preventDefault();
+        const nav = document.querySelector(`[data-page="${pg}"]`);
+        go(pg, nav);
+      }
+    }
+  });
+
+  // Kick off screen keep-awake (triggered on first user interaction to comply
+  // with autoplay policies — not called blindly on page load)
+  let wakeStarted = false;
+  function startWakeOnInteraction() {
+    if (wakeStarted) return;
+    wakeStarted = true;
+    requestWakeLock();
+    document.removeEventListener('click', startWakeOnInteraction);
+    document.removeEventListener('touchstart', startWakeOnInteraction);
+  }
+  document.addEventListener('click', startWakeOnInteraction, { passive: true });
+  document.addEventListener('touchstart', startWakeOnInteraction, { passive: true });
+
+  console.log('[PendoPWA] ✅ PWA engine ready — Pendo Packaging POS');
+})(); // end PendoPWA IIFE
+</script>
+</body>
+</html>
